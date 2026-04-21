@@ -509,6 +509,206 @@
   to { transform: rotate(360deg); }
 }
 
+/* ── Task Drawer ── */
+
+.drawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  animation: fadeIn 0.15s ease;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(480px, 92vw);
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  z-index: 201;
+  overflow-y: auto;
+  padding: 20px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%) }
+  to   { transform: translateX(0) }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawerIssueId {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text3);
+}
+
+.drawerClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  transition: color 0.1s, background 0.1s;
+}
+
+.drawerClose:hover {
+  color: var(--text);
+  background: var(--bg4);
+}
+
+.drawerTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.drawerMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.drawerPriority {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.drawerAssignees {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawerAssigneeList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drawerAssigneeItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.drawerMetaLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+
+.drawerDescWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawerDescription {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text2);
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+/* override inline styles from Plane's rich-text HTML */
+.drawerDescription * {
+  color: inherit !important;
+  background-color: transparent !important;
+  font-family: var(--font) !important;
+}
+
+.drawerDescription a {
+  color: var(--accent) !important;
+}
+
+.drawerDescription p { margin: 0 0 0.6em; }
+.drawerDescription p:last-child { margin-bottom: 0; }
+
+.drawerDescription ul,
+.drawerDescription ol {
+  padding-left: 1.4em;
+  margin: 0 0 0.6em;
+}
+
+.drawerDescription code {
+  font-family: var(--mono) !important;
+  font-size: 12px;
+  background: var(--bg4) !important;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.drawerDescription pre {
+  background: var(--bg4) !important;
+  padding: 12px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-size: 12px;
+}
+
+.drawerDescription :global(.planePlaceholderImg) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 5px;
+  background: var(--bg4) !important;
+  border: 1px solid var(--border2) !important;
+  font-size: 12px !important;
+  color: var(--text3) !important;
+  font-style: normal !important;
+  text-decoration: none !important;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.drawerDescription :global(.planePlaceholderImg:hover) {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.drawerNoDesc {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
 @media (max-width: 520px) {
   .filterRow { flex-direction: column; gap: 4px; }
   .filterLabel { padding-top: 0; }

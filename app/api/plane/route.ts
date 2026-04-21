@@ -5,8 +5,9 @@ const API_KEY = process.env.PLANE_API_KEY!
 const WORKSPACE = process.env.PLANE_WORKSPACE_SLUG!
 
 
-async function planeGet(path: string, noCache = false) {
-  const res = await fetch(`${PLANE_API}${path}`, {
+async function planeGet(urlOrPath: string, noCache = false) {
+  const url = urlOrPath.startsWith('http') ? urlOrPath : `${PLANE_API}${urlOrPath}`
+  const res = await fetch(url, {
     headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY },
     ...(noCache ? { cache: 'no-store' } : { next: { revalidate: 30 } }),
   })
@@ -19,8 +20,14 @@ async function planeGet(path: string, noCache = false) {
 
 async function getAllPages(path: string, noCache = false) {
   const results: unknown[] = []
-  const data = await planeGet(`${path}?per_page=250`, noCache)
-  results.push(...(data.results ?? []))
+  let cursor: string | null = null
+  while (true) {
+    const url = `${PLANE_API}${path}?per_page=100${cursor ? `&cursor=${cursor}` : ''}`
+    const data = await planeGet(url, noCache)
+    results.push(...(data.results ?? []))
+    if (!data.next_page_results) break
+    cursor = data.next_cursor
+  }
   return results
 }
 
@@ -31,8 +38,8 @@ export async function GET(req: NextRequest) {
 
   try {
     if (action === 'projects') {
-      const data = await planeGet(`/workspaces/${WORKSPACE}/projects/?per_page=100`)
-      return NextResponse.json(data.results ?? [])
+      const projects = await getAllPages(`/workspaces/${WORKSPACE}/projects/`)
+      return NextResponse.json(projects)
     }
 
     if (action === 'members' && projectId) {
@@ -49,13 +56,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === 'labels' && projectId) {
-      const data = await planeGet(`/workspaces/${WORKSPACE}/projects/${projectId}/labels/?per_page=100`)
-      const labels = (data.results ?? []).map((l: Record<string, unknown>) => ({
-        id: l.id,
-        name: l.name,
-        color: l.color ?? '#888',
+      const labels = await getAllPages(`/workspaces/${WORKSPACE}/projects/${projectId}/labels/`)
+      return NextResponse.json(labels.map((l: unknown) => {
+        const label = l as Record<string, unknown>
+        return { id: label.id, name: label.name, color: label.color ?? '#888' }
       }))
-      return NextResponse.json(labels)
     }
 
     if (action === 'issues' && projectId) {

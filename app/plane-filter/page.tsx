@@ -4,6 +4,122 @@ import { useEffect, useRef, useState } from 'react'
 import type { PlaneLabel, PlaneMember, PlaneProject, PlaneState } from '@/lib/types'
 import styles from './page.module.css'
 
+function sanitizeDescHtml(html: string, issueUrl: string | null): string {
+  const placeholder = issueUrl
+    ? `<a href="${issueUrl}" target="_blank" rel="noreferrer" class="planePlaceholderImg">&#128444; Image (view in Plane)</a>`
+    : '<span class="planePlaceholderImg">&#128444; Image</span>'
+  return html
+    .replace(/<img[^>]*\/?>/gi, placeholder)
+    .replace(/<image-component[^>]*>[\s\S]*?<\/image-component>/gi, placeholder)
+    .replace(/<image-component[^/]*\/>/gi, placeholder)
+}
+
+function TaskDrawer({
+  issue,
+  states,
+  labels,
+  members,
+  priorityConfig,
+  onClose,
+}: {
+  issue: RawIssue | null
+  states: PlaneState[]
+  labels: PlaneLabel[]
+  members: PlaneMember[]
+  priorityConfig: Record<string, { label: string; color: string }>
+  onClose: () => void
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const open = issue !== null
+
+  if (!open) return null
+
+  const priority = (issue.priority as string) ?? 'none'
+  const p = priorityConfig[priority] ?? priorityConfig.none
+  const stateId = issue.state as string
+  const stateObj = states.find(s => s.id === stateId)
+  const labelIds = (issue.labels as string[]) ?? []
+  const assigneeIds = (issue.assignees as string[]) ?? []
+  const appUrl = process.env.NEXT_PUBLIC_PLANE_APP_URL
+  const workspace = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG
+  const issueUrl = appUrl && workspace
+    ? `${appUrl}/${workspace}/projects/${issue.project as string}/issues/${issue.id as string}/`
+    : null
+  const descHtml = sanitizeDescHtml((issue.description_html as string) ?? '', issueUrl)
+
+  return (
+    <>
+      <div className={styles.drawerOverlay} onClick={onClose} />
+      <aside className={styles.drawer}>
+        <div className={styles.drawerHeader}>
+          <span className={styles.drawerIssueId}>#{issue.sequence_id as number}</span>
+          <button className={styles.drawerClose} onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        <h2 className={styles.drawerTitle}>{issue.name as string}</h2>
+
+        <div className={styles.drawerMeta}>
+          <span className={styles.drawerPriority} style={{ background: p.color + '22', borderColor: p.color + '55', color: p.color }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: p.color, display: 'inline-block', flexShrink: 0 }} />
+            {p.label}
+          </span>
+
+          {stateObj && (
+            <span className={styles.stateBadge} style={{ borderColor: stateObj.color + '55', color: stateObj.color }}>
+              {stateObj.name}
+            </span>
+          )}
+
+          {labelIds.map(lid => {
+            const lObj = labels.find(l => l.id === lid)
+            if (!lObj) return null
+            return (
+              <span key={lid} className={styles.labelBadge} style={{ background: lObj.color + '1a', borderColor: lObj.color + '44', color: lObj.color }}>
+                {lObj.name}
+              </span>
+            )
+          })}
+        </div>
+
+        {assigneeIds.length > 0 && (
+          <div className={styles.drawerAssignees}>
+            <span className={styles.drawerMetaLabel}>ASSIGNEES</span>
+            <div className={styles.drawerAssigneeList}>
+              {assigneeIds.map(aid => {
+                const mObj = members.find(m => m.id === aid)
+                if (!mObj) return null
+                return (
+                  <div key={aid} className={styles.drawerAssigneeItem}>
+                    <Avatar name={mObj.name} size={22} />
+                    <span>{mObj.name}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {descHtml && descHtml !== '<p></p>' ? (
+          <div className={styles.drawerDescWrap}>
+            <span className={styles.drawerMetaLabel}>DESCRIPTION</span>
+            <div
+              className={styles.drawerDescription}
+              dangerouslySetInnerHTML={{ __html: descHtml }}
+            />
+          </div>
+        ) : (
+          <div className={styles.drawerNoDesc}>No description</div>
+        )}
+      </aside>
+    </>
+  )
+}
+
 const PRIORITY_CONFIG = {
   urgent: { label: 'Urgent', color: '#ff4d4d' },
   high:   { label: 'High',   color: '#ff8c42' },
@@ -151,6 +267,7 @@ export default function PlaneFilterPage() {
   const [error, setError] = useState('')
   const [allIssues, setAllIssues] = useState<RawIssue[]>([])
   const [filtered, setFiltered] = useState<RawIssue[] | null>(null)
+  const [selectedIssue, setSelectedIssue] = useState<RawIssue | null>(null)
 
   useEffect(() => {
     api<PlaneProject[]>('projects')
@@ -229,13 +346,10 @@ export default function PlaneFilterPage() {
     }))
   }, [allIssues, include, exclude])
 
-  function clearAll() {
-    setInclude(EMPTY_FILTER)
-    setExclude(EMPTY_FILTER)
-  }
+  const hasIncludeFilters =
+    include.assignees.length > 0 || include.labels.length > 0 || include.states.length > 0
 
-  const hasFilters =
-    include.assignees.length > 0 || include.labels.length > 0 || include.states.length > 0 ||
+  const hasExcludeFilters =
     exclude.assignees.length > 0 || exclude.labels.length > 0 || exclude.states.length > 0
 
   const priorityConfig = PRIORITY_CONFIG as Record<string, { label: string; color: string }>
@@ -256,6 +370,14 @@ export default function PlaneFilterPage() {
 
   return (
     <div className={styles.page}>
+      <TaskDrawer
+        issue={selectedIssue}
+        states={states}
+        labels={labels}
+        members={members}
+        priorityConfig={priorityConfig}
+        onClose={() => setSelectedIssue(null)}
+      />
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <div className={styles.logo}>
@@ -319,6 +441,9 @@ export default function PlaneFilterPage() {
                   <span className={`${styles.panelTitleDot} ${styles.panelTitleDotInclude}`} />
                   INCLUDE FILTERS
                 </span>
+                {hasIncludeFilters && (
+                  <button className={styles.clearBtn} onClick={() => setInclude(EMPTY_FILTER)}>Clear</button>
+                )}
               </div>
 
               <FilterInput
@@ -353,8 +478,8 @@ export default function PlaneFilterPage() {
                   <span className={`${styles.panelTitleDot} ${styles.panelTitleDotExclude}`} />
                   EXCLUDE FILTERS
                 </span>
-                {hasFilters && (
-                  <button className={styles.clearBtn} onClick={clearAll}>Clear</button>
+                {hasExcludeFilters && (
+                  <button className={styles.clearBtn} onClick={() => setExclude(EMPTY_FILTER)}>Clear</button>
                 )}
               </div>
 
@@ -405,7 +530,7 @@ export default function PlaneFilterPage() {
                   const assigneeIds = (issue.assignees as string[]) ?? []
 
                   return (
-                    <div key={issue.id as string} className={styles.issueRow}>
+                    <div key={issue.id as string} className={styles.issueRow} onClick={() => setSelectedIssue(issue)} style={{ cursor: 'pointer' }}>
                       <span
                         className={styles.priorityDot}
                         style={{ background: p.color }}
