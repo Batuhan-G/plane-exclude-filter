@@ -29,19 +29,18 @@ export function IssueRow({ issue, states, labels, members, issueUrl, onClick }: 
 
   return (
     <div className={styles.issueRow} onClick={onClick} style={{ cursor: 'pointer' }}>
-      <span className={styles.priorityDot} style={{ background: p.color }} title={p.label} />
       <div className={styles.issueMain}>
-        <div className={styles.issueTitle}>
+        <div className={styles.issueTop}>
           <span className={styles.issueId}>#{issue.sequence_id}</span>
-          {issue.name}
-        </div>
-        <div className={styles.issueMeta}>
           <span
             className={styles.priorityBadge}
             style={{ borderColor: p.color + '55', color: p.color }}
           >
             {p.label}
           </span>
+        </div>
+        <div className={styles.issueTitle}>{issue.name}</div>
+        <div className={styles.issueMeta}>
           {stateObj && (
             <span
               className={styles.stateBadge}

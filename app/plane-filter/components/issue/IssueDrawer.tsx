@@ -34,6 +34,11 @@ export function IssueDrawer({ issue, states, labels, members, onClose }: IssueDr
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   if (!issue) return null
 
   const p = PRIORITY_CONFIG[issue.priority] ?? PRIORITY_CONFIG.none
