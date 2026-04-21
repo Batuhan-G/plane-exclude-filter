@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0f0f;
+  --bg2: #161616;
+  --bg3: #1e1e1e;
+  --bg4: #252525;
+  --border: #2e2e2e;
+  --border2: #3a3a3a;
+  --text: #e8e8e8;
+  --text2: #a0a0a0;
+  --text3: #606060;
+  --accent: #e8ff47;
+  --accent2: #c8df20;
+  --red: #ff4d4d;
+  --red-bg: #1a0a0a;
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --radius: 6px;
+  --radius-lg: 10px;
+}
+
+html { font-family: var(--font); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; }
+
+::selection { background: var(--accent); color: #000; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
