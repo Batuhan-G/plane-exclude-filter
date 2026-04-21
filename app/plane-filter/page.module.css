@@ -112,7 +112,7 @@
 .panelTitle {
   font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.08em;
   color: var(--text3);
 }
@@ -131,6 +131,32 @@
 .clearBtn:hover {
   color: var(--text);
   background: var(--bg4);
+}
+
+.syncBtn {
+  height: 30px;
+  padding: 0 14px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.syncBtn:hover:not(:disabled) {
+  background: var(--accent2);
+}
+
+.syncBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .select {
@@ -162,13 +188,41 @@
   cursor: not-allowed;
 }
 
-.excludeRow {
+.panelInclude {
+  border-left: 3px solid #4caf7d;
+}
+
+.panelExclude {
+  border-left: 3px solid #ff4d4d;
+}
+
+.panelTitleDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 7px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+.panelTitleDotInclude {
+  background: #4caf7d;
+}
+
+.panelTitleDotExclude {
+  background: #ff4d4d;
+}
+
+.filterRow {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
 
-.excludeLabel {
+.filterLabel {
   font-size: 13px;
   font-weight: 500;
   color: var(--text2);
@@ -177,7 +231,7 @@
   flex-shrink: 0;
 }
 
-.excludeRight {
+.filterRight {
   flex: 1;
   position: relative;
   min-width: 0;
@@ -456,6 +510,6 @@
 }
 
 @media (max-width: 520px) {
-  .excludeRow { flex-direction: column; gap: 4px; }
-  .excludeLabel { padding-top: 0; }
+  .filterRow { flex-direction: column; gap: 4px; }
+  .filterLabel { padding-top: 0; }
 }

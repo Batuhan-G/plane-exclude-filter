@@ -1,39 +1,25 @@
 # Plane Exclude Filter
 
-Plane'in free planında olmayan **exclude filter** özelliğini sağlayan minimal Next.js aracı.
+A minimal Next.js tool that brings the **exclude filter** feature missing from Plane's free plan.
 
-Assignee ve Label bazında istediğin kişi veya etiketlere sahip taskları görünümden çıkarabilirsin.
+Filter out issues from your view by assignee, label, or state.
 
-## Kurulum
+## Setup
 
 ```bash
-npm install
+bun install
 cp .env.local.example .env.local
 ```
 
-`.env.local` dosyasını düzenle:
+Edit `.env.local`:
 
 ```
-PLANE_API_KEY=plane_api_...        # Profile → Personal Access Tokens
-PLANE_WORKSPACE_SLUG=my-workspace  # URL'deki slug: plane.so/MY-SLUG/...
+PLANE_API_KEY=plane_api_...                  # Profile → Personal Access Tokens
+PLANE_WORKSPACE_SLUG=my-workspace            # Slug from the URL: plane.so/MY-SLUG/...
+PLANE_BASE_URL=https://api.plane.so          # Optional — defaults to https://api.plane.so (override for self-hosted instances)
 ```
 
 ```bash
-npm run dev
+bun dev
 # http://localhost:3000
 ```
-
-## Vercel Deploy
-
-1. GitHub'a push et
-2. [vercel.com](https://vercel.com) → New Project → repo'yu seç
-3. Environment Variables ekle:
-   - `PLANE_API_KEY`
-   - `PLANE_WORKSPACE_SLUG`
-4. Deploy
-
-Takım linki paylaş, kimse API key görmez.
-
-## Güvenlik
-
-API key sadece Vercel'deki environment variable'da durur. Tarayıcıya hiç çıkmaz. Tüm Plane istekleri Next.js API route üzerinden proxy'lenir.

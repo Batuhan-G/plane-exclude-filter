@@ -12,9 +12,10 @@ const PRIORITY_CONFIG = {
   none:   { label: 'None',   color: '#505050' },
 }
 
-async function api<T>(action: string, project?: string): Promise<T> {
+async function api<T>(action: string, project?: string, bust = false): Promise<T> {
   const params = new URLSearchParams({ action })
   if (project) params.set('project', project)
+  if (bust) params.set('bust', Date.now().toString())
   const res = await fetch(`/api/plane?${params}`)
   if (!res.ok) {
     const err = await res.json()
@@ -43,12 +44,12 @@ function Tag({ label, color, onRemove }: { label: string; color?: string; onRemo
     <span className={styles.tag} style={color ? { background: color + '22', borderColor: color + '55', color } : {}}>
       {color && <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />}
       {label}
-      <button className={styles.tagRemove} onClick={onRemove} aria-label="Kaldır">×</button>
+      <button className={styles.tagRemove} onClick={onRemove} aria-label="Remove">×</button>
     </span>
   )
 }
 
-function ExcludeInput<T extends { id: string; name: string; color?: string; avatar?: string }>({
+function FilterInput<T extends { id: string; name: string; color?: string }>({
   label,
   items,
   selected,
@@ -81,9 +82,9 @@ function ExcludeInput<T extends { id: string; name: string; color?: string; avat
   }, [])
 
   return (
-    <div className={styles.excludeRow}>
-      <span className={styles.excludeLabel}>{label}</span>
-      <div className={styles.excludeRight} ref={wrapRef}>
+    <div className={styles.filterRow}>
+      <span className={styles.filterLabel}>{label}</span>
+      <div className={styles.filterRight} ref={wrapRef}>
         <div className={styles.tagInput} onClick={() => { setOpen(true); inputRef.current?.focus() }}>
           {selected.map(s => (
             <Tag
@@ -98,7 +99,7 @@ function ExcludeInput<T extends { id: string; name: string; color?: string; avat
             value={query}
             onChange={e => { setQuery(e.target.value); setOpen(true) }}
             onFocus={() => setOpen(true)}
-            placeholder={selected.length === 0 ? 'Seç...' : ''}
+            placeholder={selected.length === 0 ? 'Select...' : ''}
             className={styles.tagInputField}
           />
         </div>
@@ -108,7 +109,7 @@ function ExcludeInput<T extends { id: string; name: string; color?: string; avat
               <button
                 key={item.id}
                 className={styles.dropdownItem}
-                onMouseDown={e => { e.preventDefault(); onAdd(item); setQuery(''); }}
+                onMouseDown={e => { e.preventDefault(); onAdd(item); setQuery('') }}
               >
                 {renderItem ? renderItem(item) : item.name}
               </button>
@@ -117,7 +118,7 @@ function ExcludeInput<T extends { id: string; name: string; color?: string; avat
         )}
         {open && filtered.length === 0 && query && (
           <div className={styles.dropdown}>
-            <div className={styles.dropdownEmpty}>Sonuç yok</div>
+            <div className={styles.dropdownEmpty}>No results</div>
           </div>
         )}
       </div>
@@ -127,16 +128,25 @@ function ExcludeInput<T extends { id: string; name: string; color?: string; avat
 
 type RawIssue = Record<string, unknown>
 
+type FilterSet<A, L, S> = {
+  assignees: A[]
+  labels: L[]
+  states: S[]
+}
+
+const EMPTY_FILTER = { assignees: [], labels: [], states: [] }
+
 export default function PlaneFilterPage() {
   const [projects, setProjects] = useState<PlaneProject[]>([])
   const [selectedProject, setSelectedProject] = useState('')
   const [members, setMembers] = useState<PlaneMember[]>([])
   const [labels, setLabels] = useState<PlaneLabel[]>([])
   const [states, setStates] = useState<PlaneState[]>([])
-  const [excludeAssignees, setExcludeAssignees] = useState<PlaneMember[]>([])
-  const [excludeLabels, setExcludeLabels] = useState<PlaneLabel[]>([])
-  const [excludeStates, setExcludeStates] = useState<PlaneState[]>([])
-  const [loading, setLoading] = useState(false)
+
+  const [include, setInclude] = useState<FilterSet<PlaneMember, PlaneLabel, PlaneState>>(EMPTY_FILTER)
+  const [exclude, setExclude] = useState<FilterSet<PlaneMember, PlaneLabel, PlaneState>>(EMPTY_FILTER)
+
+  const [syncing, setSyncing] = useState(false)
   const [loadingProject, setLoadingProject] = useState(false)
   const [error, setError] = useState('')
   const [allIssues, setAllIssues] = useState<RawIssue[]>([])
@@ -148,13 +158,21 @@ export default function PlaneFilterPage() {
       .catch(e => setError(e.message))
   }, [])
 
+  async function fetchIssues(id: string, bust = false) {
+    try {
+      const all = await api<RawIssue[]>('issues', id, bust)
+      setAllIssues(all)
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }
+
   async function handleProjectChange(id: string) {
     setSelectedProject(id)
     setAllIssues([])
     setFiltered(null)
-    setExcludeAssignees([])
-    setExcludeLabels([])
-    setExcludeStates([])
+    setInclude(EMPTY_FILTER)
+    setExclude(EMPTY_FILTER)
     setError('')
     if (!id) return
     setLoadingProject(true)
@@ -167,51 +185,74 @@ export default function PlaneFilterPage() {
       setMembers(m)
       setLabels(l)
       setStates(s)
+      await fetchIssues(id)
     } catch (e) {
       setError((e as Error).message)
     }
     setLoadingProject(false)
   }
 
-  async function applyFilter() {
+  async function handleSync() {
     if (!selectedProject) return
-    setLoading(true)
+    setSyncing(true)
     setError('')
-    try {
-      const all = await api<RawIssue[]>('issues', selectedProject)
-      setAllIssues(all)
-
-      const exAssigneeIds = new Set(excludeAssignees.map(a => a.id))
-      const exLabelIds = new Set(excludeLabels.map(l => l.id))
-      const exStateIds = new Set(excludeStates.map(s => s.id))
-
-      const result = all.filter(issue => {
-        const assigneeIds = (issue.assignees as string[]) ?? []
-        const labelIds = (issue.labels as string[]) ?? []
-        const stateId = issue.state as string ?? ''
-        if (exAssigneeIds.size > 0 && assigneeIds.some(id => exAssigneeIds.has(id))) return false
-        if (exLabelIds.size > 0 && labelIds.some(id => exLabelIds.has(id))) return false
-        if (exStateIds.size > 0 && exStateIds.has(stateId)) return false
-        return true
-      })
-
-      setFiltered(result)
-    } catch (e) {
-      setError((e as Error).message)
-    }
-    setLoading(false)
+    await fetchIssues(selectedProject, true)
+    setSyncing(false)
   }
+
+  useEffect(() => {
+    if (allIssues.length === 0) {
+      setFiltered(null)
+      return
+    }
+    const inAssigneeIds = new Set(include.assignees.map(a => a.id))
+    const inLabelIds    = new Set(include.labels.map(l => l.id))
+    const inStateIds    = new Set(include.states.map(s => s.id))
+    const exAssigneeIds = new Set(exclude.assignees.map(a => a.id))
+    const exLabelIds    = new Set(exclude.labels.map(l => l.id))
+    const exStateIds    = new Set(exclude.states.map(s => s.id))
+
+    setFiltered(allIssues.filter(issue => {
+      const assigneeIds = (issue.assignees as string[]) ?? []
+      const labelIds    = (issue.labels as string[]) ?? []
+      const stateId     = (issue.state as string) ?? ''
+
+      if (inAssigneeIds.size > 0 && !assigneeIds.some(id => inAssigneeIds.has(id))) return false
+      if (inLabelIds.size > 0    && !labelIds.some(id => inLabelIds.has(id)))        return false
+      if (inStateIds.size > 0    && !inStateIds.has(stateId))                        return false
+
+      if (exAssigneeIds.size > 0 && assigneeIds.some(id => exAssigneeIds.has(id))) return false
+      if (exLabelIds.size > 0    && labelIds.some(id => exLabelIds.has(id)))        return false
+      if (exStateIds.size > 0    && exStateIds.has(stateId))                        return false
+
+      return true
+    }))
+  }, [allIssues, include, exclude])
 
   function clearAll() {
-    setExcludeAssignees([])
-    setExcludeLabels([])
-    setExcludeStates([])
-    setFiltered(null)
+    setInclude(EMPTY_FILTER)
+    setExclude(EMPTY_FILTER)
   }
 
-  const hasFilters = excludeAssignees.length > 0 || excludeLabels.length > 0 || excludeStates.length > 0
+  const hasFilters =
+    include.assignees.length > 0 || include.labels.length > 0 || include.states.length > 0 ||
+    exclude.assignees.length > 0 || exclude.labels.length > 0 || exclude.states.length > 0
 
   const priorityConfig = PRIORITY_CONFIG as Record<string, { label: string; color: string }>
+
+  const memberRenderer = (item: PlaneMember) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <Avatar name={item.name} size={20} />
+      <span>{item.name}</span>
+    </div>
+  )
+
+  const coloredItemRenderer = (item: PlaneLabel | PlaneState) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+      <span>{item.name}</span>
+    </div>
+  )
 
   return (
     <div className={styles.page}>
@@ -221,19 +262,31 @@ export default function PlaneFilterPage() {
             <span className={styles.logoDot} />
             <span>plane<span className={styles.logoAccent}>filter</span></span>
           </div>
-          {filtered !== null && (
-            <div className={styles.headerStats}>
-              <span className={styles.statChip}>
-                <span className={styles.statNum}>{filtered.length}</span>
-                <span className={styles.statLabel}>gösterilen</span>
-              </span>
-              <span className={styles.statDivider} />
-              <span className={styles.statChip}>
-                <span className={styles.statNum}>{allIssues.length - filtered.length}</span>
-                <span className={styles.statLabel}>hariç tutuldu</span>
-              </span>
-            </div>
-          )}
+          <div className={styles.headerStats}>
+            {filtered !== null && (
+              <>
+                <span className={styles.statChip}>
+                  <span className={styles.statNum}>{filtered.length}</span>
+                  <span className={styles.statLabel}>shown</span>
+                </span>
+                <span className={styles.statDivider} />
+                <span className={styles.statChip}>
+                  <span className={styles.statNum}>{allIssues.length - filtered.length}</span>
+                  <span className={styles.statLabel}>excluded</span>
+                </span>
+                <span className={styles.statDivider} />
+              </>
+            )}
+            {selectedProject && (
+              <button
+                className={styles.syncBtn}
+                onClick={handleSync}
+                disabled={syncing || loadingProject}
+              >
+                {syncing ? <><span className={styles.spinnerDark} /> Syncing...</> : 'Sync'}
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -242,7 +295,7 @@ export default function PlaneFilterPage() {
 
         <div className={styles.panel}>
           <div className={styles.panelHeader}>
-            <span className={styles.panelTitle}>Proje</span>
+            <span className={styles.panelTitle}>PROJECT</span>
             {loadingProject && <span className={styles.spinner} />}
           </div>
           <select
@@ -251,7 +304,7 @@ export default function PlaneFilterPage() {
             onChange={e => handleProjectChange(e.target.value)}
             disabled={projects.length === 0}
           >
-            <option value="">— Proje seç —</option>
+            <option value="">— Select project —</option>
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -259,66 +312,79 @@ export default function PlaneFilterPage() {
         </div>
 
         {selectedProject && !loadingProject && (
-          <div className={styles.panel}>
-            <div className={styles.panelHeader}>
-              <span className={styles.panelTitle}>Exclude Filtreler</span>
-              {hasFilters && (
-                <button className={styles.clearBtn} onClick={clearAll}>Temizle</button>
-              )}
+          <>
+            <div className={`${styles.panel} ${styles.panelInclude}`}>
+              <div className={styles.panelHeader}>
+                <span className={styles.panelTitle}>
+                  <span className={`${styles.panelTitleDot} ${styles.panelTitleDotInclude}`} />
+                  INCLUDE FILTERS
+                </span>
+              </div>
+
+              <FilterInput
+                label="Assignee"
+                items={members}
+                selected={include.assignees}
+                onAdd={item => setInclude(prev => ({ ...prev, assignees: [...prev.assignees, item] }))}
+                onRemove={id => setInclude(prev => ({ ...prev, assignees: prev.assignees.filter(a => a.id !== id) }))}
+                renderItem={memberRenderer}
+              />
+              <FilterInput
+                label="Label"
+                items={labels}
+                selected={include.labels}
+                onAdd={item => setInclude(prev => ({ ...prev, labels: [...prev.labels, item] }))}
+                onRemove={id => setInclude(prev => ({ ...prev, labels: prev.labels.filter(l => l.id !== id) }))}
+                renderItem={coloredItemRenderer}
+              />
+              <FilterInput
+                label="State"
+                items={states}
+                selected={include.states}
+                onAdd={item => setInclude(prev => ({ ...prev, states: [...prev.states, item] }))}
+                onRemove={id => setInclude(prev => ({ ...prev, states: prev.states.filter(s => s.id !== id) }))}
+                renderItem={coloredItemRenderer}
+              />
             </div>
 
-            <ExcludeInput
-              label="Assignee"
-              items={members}
-              selected={excludeAssignees}
-              onAdd={item => setExcludeAssignees(prev => [...prev, item])}
-              onRemove={id => setExcludeAssignees(prev => prev.filter(a => a.id !== id))}
-              renderItem={item => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Avatar name={item.name} size={20} />
-                  <span>{item.name}</span>
-                </div>
-              )}
-            />
+            <div className={`${styles.panel} ${styles.panelExclude}`}>
+              <div className={styles.panelHeader}>
+                <span className={styles.panelTitle}>
+                  <span className={`${styles.panelTitleDot} ${styles.panelTitleDotExclude}`} />
+                  EXCLUDE FILTERS
+                </span>
+                {hasFilters && (
+                  <button className={styles.clearBtn} onClick={clearAll}>Clear</button>
+                )}
+              </div>
 
-            <ExcludeInput
-              label="Label"
-              items={labels}
-              selected={excludeLabels}
-              onAdd={item => setExcludeLabels(prev => [...prev, item])}
-              onRemove={id => setExcludeLabels(prev => prev.filter(l => l.id !== id))}
-              renderItem={item => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-                  <span>{item.name}</span>
-                </div>
-              )}
-            />
+              <FilterInput
+                label="Assignee"
+                items={members}
+                selected={exclude.assignees}
+                onAdd={item => setExclude(prev => ({ ...prev, assignees: [...prev.assignees, item] }))}
+                onRemove={id => setExclude(prev => ({ ...prev, assignees: prev.assignees.filter(a => a.id !== id) }))}
+                renderItem={memberRenderer}
+              />
+              <FilterInput
+                label="Label"
+                items={labels}
+                selected={exclude.labels}
+                onAdd={item => setExclude(prev => ({ ...prev, labels: [...prev.labels, item] }))}
+                onRemove={id => setExclude(prev => ({ ...prev, labels: prev.labels.filter(l => l.id !== id) }))}
+                renderItem={coloredItemRenderer}
+              />
+              <FilterInput
+                label="State"
+                items={states}
+                selected={exclude.states}
+                onAdd={item => setExclude(prev => ({ ...prev, states: [...prev.states, item] }))}
+                onRemove={id => setExclude(prev => ({ ...prev, states: prev.states.filter(s => s.id !== id) }))}
+                renderItem={coloredItemRenderer}
+              />
 
-            <ExcludeInput
-              label="State"
-              items={states}
-              selected={excludeStates}
-              onAdd={item => setExcludeStates(prev => [...prev, item])}
-              onRemove={id => setExcludeStates(prev => prev.filter(s => s.id !== id))}
-              renderItem={item => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-                  <span>{item.name}</span>
-                </div>
-              )}
-            />
-
-            <div className={styles.actions}>
-              <button
-                className={styles.applyBtn}
-                onClick={applyFilter}
-                disabled={loading}
-              >
-                {loading ? <><span className={styles.spinnerDark} /> Yükleniyor...</> : 'Filtrele'}
-              </button>
             </div>
-          </div>
+          </>
         )}
 
         {filtered !== null && (
@@ -326,12 +392,12 @@ export default function PlaneFilterPage() {
             {filtered.length === 0 ? (
               <div className={styles.empty}>
                 <span className={styles.emptyIcon}>◎</span>
-                <p>Eşleşen task bulunamadı</p>
+                <p>No matching issues found</p>
               </div>
             ) : (
               <div className={styles.issueList}>
                 {filtered.map(issue => {
-                  const priority = issue.priority as string ?? 'none'
+                  const priority = (issue.priority as string) ?? 'none'
                   const p = priorityConfig[priority] ?? priorityConfig.none
                   const stateId = issue.state as string
                   const stateObj = states.find(s => s.id === stateId)

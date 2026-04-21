@@ -4,14 +4,11 @@ const PLANE_API = (process.env.PLANE_BASE_URL || 'https://api.plane.so') + '/api
 const API_KEY = process.env.PLANE_API_KEY!
 const WORKSPACE = process.env.PLANE_WORKSPACE_SLUG!
 
-if (!API_KEY || !WORKSPACE) {
-  console.error('Missing PLANE_API_KEY or PLANE_WORKSPACE_SLUG env vars')
-}
 
-async function planeGet(path: string) {
+async function planeGet(path: string, noCache = false) {
   const res = await fetch(`${PLANE_API}${path}`, {
     headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY },
-    next: { revalidate: 30 },
+    ...(noCache ? { cache: 'no-store' } : { next: { revalidate: 30 } }),
   })
   if (!res.ok) {
     const text = await res.text()
@@ -20,9 +17,9 @@ async function planeGet(path: string) {
   return res.json()
 }
 
-async function getAllPages(path: string) {
+async function getAllPages(path: string, noCache = false) {
   const results: unknown[] = []
-  const data = await planeGet(`${path}?per_page=250`)
+  const data = await planeGet(`${path}?per_page=250`, noCache)
   results.push(...(data.results ?? []))
   return results
 }
@@ -62,21 +59,23 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === 'issues' && projectId) {
+      const bust = searchParams.has('bust')
       const issues = await getAllPages(
-        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/`
+        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/`,
+        bust
       )
       return NextResponse.json(issues)
     }
     
     if (action === 'states' && projectId) {
-  const data = await planeGet(`/workspaces/${WORKSPACE}/projects/${projectId}/states/`)
-  const states = (data.results ?? []).map((s: Record<string, unknown>) => ({
-    id: s.id,
-    name: s.name,
-    color: s.color ?? '#888',
-  }))
-  return NextResponse.json(states)
-}
+      const data = await planeGet(`/workspaces/${WORKSPACE}/projects/${projectId}/states/`)
+      const states = (data.results ?? []).map((s: Record<string, unknown>) => ({
+        id: s.id,
+        name: s.name,
+        color: s.color ?? '#888',
+      }))
+      return NextResponse.json(states)
+    }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   } catch (err) {
