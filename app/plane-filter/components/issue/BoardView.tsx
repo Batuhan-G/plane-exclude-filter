@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Avatar } from '../ui/Avatar'
 import { PRIORITY_CONFIG } from '@/lib/constants'
 import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
@@ -16,6 +16,42 @@ interface BoardViewProps {
 }
 
 export function BoardView({ issues, states, labels, members, getIssueUrl, onSelectIssue }: BoardViewProps) {
+  const boardRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+  const hasDragged = useRef(false)
+  const startX = useRef(0)
+  const scrollLeft = useRef(0)
+
+  function onMouseDown(e: React.MouseEvent) {
+    if ((e.target as HTMLElement).closest('button')) return
+    isDragging.current = true
+    hasDragged.current = false
+    startX.current = e.pageX - (boardRef.current?.offsetLeft ?? 0)
+    scrollLeft.current = boardRef.current?.scrollLeft ?? 0
+    boardRef.current!.style.cursor = 'grabbing'
+  }
+
+  function onMouseMove(e: React.MouseEvent) {
+    if (!isDragging.current || !boardRef.current) return
+    e.preventDefault()
+    const x = e.pageX - boardRef.current.offsetLeft
+    const diff = x - startX.current
+    if (Math.abs(diff) > 4) hasDragged.current = true
+    boardRef.current.scrollLeft = scrollLeft.current - diff
+  }
+
+  function onMouseUp() {
+    isDragging.current = false
+    if (boardRef.current) boardRef.current.style.cursor = 'grab'
+  }
+
+  function onClickCapture(e: React.MouseEvent) {
+    if (hasDragged.current) {
+      e.stopPropagation()
+      hasDragged.current = false
+    }
+  }
+
   if (issues.length === 0) {
     return (
       <div className={styles.empty}>
@@ -37,7 +73,15 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
   const unknownIssues = issues.filter(i => !states.find(s => s.id === i.state))
 
   return (
-    <div className={styles.board}>
+    <div
+      ref={boardRef}
+      className={styles.board}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+      onClickCapture={onClickCapture}
+    >
       {statesWithIssues.map(({ state, issues: colIssues }) => (
         <div key={state.id} className={styles.column}>
           <div className={styles.columnHeader}>
@@ -114,9 +158,15 @@ function BoardCard({ issue, labels, members, issueUrl, onClick }: BoardCardProps
       <div className={styles.cardTop}>
         <div className={styles.cardTopLeft}>
           <span className={styles.cardId}>#{issue.sequence_id}</span>
+          <span
+            className={styles.priorityBadge}
+            style={{ borderColor: p.color + '55', color: p.color }}
+          >
+            {p.label}
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          {issueUrl && (
+        <div className={styles.cardTopRight}>
+           {issueUrl && (
             <button className={styles.copyLinkBtn} onClick={handleCopyLink} title="Copy link">
               {copied ? (
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -130,39 +180,30 @@ function BoardCard({ issue, labels, members, issueUrl, onClick }: BoardCardProps
               )}
             </button>
           )}
-          <span
-            className={styles.priorityBadge}
-            style={{ borderColor: p.color + '55', color: p.color }}
-          >
-            {p.label}
-          </span>
+          {issue.assignees.map(aid => {
+            const mObj = members.find(m => m.id === aid)
+            if (!mObj) return null
+            return <Avatar key={aid} name={mObj.name} size={20} />
+          })}
+         
         </div>
       </div>
       <div className={styles.cardTitle}>{issue.name}</div>
-      {(issue.labels.length > 0 || issue.assignees.length > 0) && (
-        <div className={styles.cardFooter}>
-          <div className={styles.cardLabels}>
-            {issue.labels.map(lid => {
-              const lObj = labels.find(l => l.id === lid)
-              if (!lObj) return null
-              return (
-                <span
-                  key={lid}
-                  className={styles.labelBadge}
-                  style={{ background: lObj.color + '1a', borderColor: lObj.color + '44', color: lObj.color }}
-                >
-                  {lObj.name}
-                </span>
-              )
-            })}
-          </div>
-          <div className={styles.assigneeGroup}>
-            {issue.assignees.map(aid => {
-              const mObj = members.find(m => m.id === aid)
-              if (!mObj) return null
-              return <Avatar key={aid} name={mObj.name} size={18} />
-            })}
-          </div>
+      {issue.labels.length > 0 && (
+        <div className={styles.cardLabels}>
+          {issue.labels.map(lid => {
+            const lObj = labels.find(l => l.id === lid)
+            if (!lObj) return null
+            return (
+              <span
+                key={lid}
+                className={styles.labelBadge}
+                style={{ background: lObj.color + '1a', borderColor: lObj.color + '44', color: lObj.color }}
+              >
+                {lObj.name}
+              </span>
+            )
+          })}
         </div>
       )}
     </div>
