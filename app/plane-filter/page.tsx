@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { usePlaneData } from '@/hooks/usePlaneData'
 import { useIssues } from '@/hooks/useIssues'
 import { useFilter } from '@/hooks/useFilter'
-import { FilterPanel } from './components/filter/FilterPanel'
-import { IssueList } from './components/issue/IssueList'
+import { Header } from './components/layout/Header'
+import { MainContent } from './components/layout/MainContent'
 import { IssueDrawer } from './components/issue/IssueDrawer'
-import { Spinner } from './components/ui/Spinner'
 import type { RawIssue } from '@/lib/types'
 import styles from './page.module.css'
+
+const PLANE_APP_URL = process.env.NEXT_PUBLIC_PLANE_APP_URL || 'https://app.plane.so'
+const PLANE_WORKSPACE = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG || ''
 
 export default function PlaneFilterPage() {
   const [selectedProject, setSelectedProject] = useState('')
@@ -19,7 +21,12 @@ export default function PlaneFilterPage() {
   const issues = useIssues()
   const filter = useFilter(issues.allIssues)
 
-  const error = planeData.error || issues.error
+  const selectedProjectObj = planeData.projects.find(p => p.id === selectedProject)
+
+  function getIssueUrl(issue: RawIssue): string {
+    if (!PLANE_WORKSPACE || !selectedProjectObj) return ''
+    return `${PLANE_APP_URL}/${PLANE_WORKSPACE}/projects/${selectedProjectObj.id}/issues/${issue.id}/`
+  }
 
   async function handleProjectChange(id: string) {
     setSelectedProject(id)
@@ -45,94 +52,33 @@ export default function PlaneFilterPage() {
         onClose={() => setSelectedIssue(null)}
       />
 
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <div className={styles.logo}>
-            <span className={styles.logoDot} />
-            <span>plane<span className={styles.logoAccent}>filter</span></span>
-          </div>
-          <div className={styles.headerStats}>
-            {filter.filtered !== null && (
-              <>
-                <span className={styles.statChip}>
-                  <span className={styles.statNum}>{filter.filtered.length}</span>
-                  <span className={styles.statLabel}>shown</span>
-                </span>
-                <span className={styles.statDivider} />
-                <span className={styles.statChip}>
-                  <span className={styles.statNum}>{issues.allIssues.length - filter.filtered.length}</span>
-                  <span className={styles.statLabel}>excluded</span>
-                </span>
-                <span className={styles.statDivider} />
-              </>
-            )}
-            {selectedProject && (
-              <button
-                className={styles.syncBtn}
-                onClick={handleSync}
-                disabled={issues.syncing || planeData.loadingProject}
-              >
-                {issues.syncing ? <><Spinner variant="dark" /> Syncing...</> : 'Sync'}
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+      <Header
+        filtered={filter.filtered}
+        totalCount={issues.allIssues.length}
+        selectedProject={selectedProject}
+        syncing={issues.syncing}
+        loadingProject={planeData.loadingProject}
+        onSync={handleSync}
+      />
 
-      <main className={styles.main}>
-        {error && <div className={styles.error}>{error}</div>}
-
-        <div className={styles.projectPanel}>
-          <div className={styles.projectPanelHeader}>
-            <span className={styles.projectPanelTitle}>PROJECT</span>
-            {planeData.loadingProject && <Spinner />}
-          </div>
-          <select
-            className={styles.select}
-            value={selectedProject}
-            onChange={e => handleProjectChange(e.target.value)}
-            disabled={planeData.projects.length === 0}
-          >
-            <option value="">— Select project —</option>
-            {planeData.projects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {selectedProject && !planeData.loadingProject && (
-          <>
-            <FilterPanel
-              variant="include"
-              members={planeData.members}
-              labels={planeData.labels}
-              states={planeData.states}
-              filter={filter.include}
-              onChange={filter.setInclude}
-              onClear={filter.reset}
-            />
-            <FilterPanel
-              variant="exclude"
-              members={planeData.members}
-              labels={planeData.labels}
-              states={planeData.states}
-              filter={filter.exclude}
-              onChange={filter.setExclude}
-              onClear={() => filter.setExclude({ assignees: [], labels: [], states: [] })}
-            />
-          </>
-        )}
-
-        {filter.filtered !== null && (
-          <IssueList
-            issues={filter.filtered}
-            states={planeData.states}
-            labels={planeData.labels}
-            members={planeData.members}
-            onSelectIssue={setSelectedIssue}
-          />
-        )}
-      </main>
+      <MainContent
+        error={planeData.error || issues.error}
+        projects={planeData.projects}
+        states={planeData.states}
+        labels={planeData.labels}
+        members={planeData.members}
+        loadingProject={planeData.loadingProject}
+        selectedProject={selectedProject}
+        filtered={filter.filtered}
+        include={filter.include}
+        exclude={filter.exclude}
+        onProjectChange={handleProjectChange}
+        onIncludeChange={filter.setInclude}
+        onExcludeChange={filter.setExclude}
+        onFilterReset={filter.reset}
+        getIssueUrl={getIssueUrl}
+        onSelectIssue={setSelectedIssue}
+      />
     </div>
   )
 }

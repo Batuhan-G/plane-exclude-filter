@@ -1,7 +1,7 @@
 import { FilterInput } from './FilterInput'
 import { Avatar } from '../ui/Avatar'
-import { EMPTY_FILTER } from '@/lib/constants'
-import type { FilterSet, PlaneLabel, PlaneMember, PlaneState } from '@/lib/types'
+import { EMPTY_FILTER, PRIORITY_ITEMS } from '@/lib/constants'
+import type { FilterSet, PlaneLabel, PlaneMember, PlanePriority, PlaneState } from '@/lib/types'
 import styles from './FilterPanel.module.css'
 
 export type PanelVariant = 'include' | 'exclude'
@@ -23,11 +23,18 @@ const PANEL_LABELS: Record<PanelVariant, string> = {
 
 export function FilterPanel({ variant, members, labels, states, filter, onChange, onClear }: FilterPanelProps) {
   const hasFilters =
-    filter.assignees.length > 0 || filter.labels.length > 0 || filter.states.length > 0
+    filter.assignees.length > 0 || filter.labels.length > 0 || filter.states.length > 0 || filter.priorities.length > 0
 
   const memberRenderer = (item: PlaneMember) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <Avatar name={item.name} size={20} />
+      <span>{item.name}</span>
+    </div>
+  )
+
+  const priorityRenderer = (item: PlanePriority) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
       <span>{item.name}</span>
     </div>
   )
@@ -74,6 +81,14 @@ export function FilterPanel({ variant, members, labels, states, filter, onChange
         onAdd={item => onChange(prev => ({ ...prev, states: [...prev.states, item] }))}
         onRemove={id => onChange(prev => ({ ...prev, states: prev.states.filter(s => s.id !== id) }))}
         renderItem={coloredRenderer}
+      />
+      <FilterInput
+        label="Priority"
+        items={PRIORITY_ITEMS}
+        selected={filter.priorities}
+        onAdd={item => onChange(prev => ({ ...prev, priorities: [...prev.priorities, item] }))}
+        onRemove={id => onChange(prev => ({ ...prev, priorities: prev.priorities.filter(p => p.id !== id) }))}
+        renderItem={priorityRenderer}
       />
     </div>
   )

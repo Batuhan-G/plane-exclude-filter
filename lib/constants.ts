@@ -1,4 +1,4 @@
-import type { FilterSet, Priority } from './types'
+import type { FilterSet, PlanePriority, Priority } from './types'
 
 export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string }> = {
   urgent: { label: 'Urgent', color: '#ff4d4d' },
@@ -8,4 +8,8 @@ export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string }>
   none:   { label: 'None',   color: '#505050' },
 }
 
-export const EMPTY_FILTER: FilterSet = { assignees: [], labels: [], states: [] }
+export const PRIORITY_ITEMS: PlanePriority[] = (
+  ['urgent', 'high', 'medium', 'low', 'none'] as Priority[]
+).map(p => ({ id: p, name: PRIORITY_CONFIG[p].label, color: PRIORITY_CONFIG[p].color }))
+
+export const EMPTY_FILTER: FilterSet = { assignees: [], labels: [], states: [], priorities: [] }

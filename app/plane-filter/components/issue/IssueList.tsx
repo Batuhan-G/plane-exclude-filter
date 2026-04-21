@@ -7,10 +7,11 @@ export interface IssueListProps {
   states: PlaneState[]
   labels: PlaneLabel[]
   members: PlaneMember[]
+  getIssueUrl?: (issue: RawIssue) => string
   onSelectIssue: (issue: RawIssue) => void
 }
 
-export function IssueList({ issues, states, labels, members, onSelectIssue }: IssueListProps) {
+export function IssueList({ issues, states, labels, members, getIssueUrl, onSelectIssue }: IssueListProps) {
   if (issues.length === 0) {
     return (
       <div className={styles.results}>
@@ -32,6 +33,7 @@ export function IssueList({ issues, states, labels, members, onSelectIssue }: Is
             states={states}
             labels={labels}
             members={members}
+            issueUrl={getIssueUrl?.(issue)}
             onClick={() => onSelectIssue(issue)}
           />
         ))}

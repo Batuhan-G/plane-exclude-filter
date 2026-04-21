@@ -12,10 +12,17 @@ export interface RawIssue {
   description_html?: string
 }
 
+export interface PlanePriority {
+  id: Priority
+  name: string
+  color: string
+}
+
 export interface FilterSet {
   assignees: PlaneMember[]
   labels: PlaneLabel[]
   states: PlaneState[]
+  priorities: PlanePriority[]
 }
 
 export interface PlaneProject {
