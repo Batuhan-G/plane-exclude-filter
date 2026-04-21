@@ -35,9 +35,10 @@ export function IssueDrawer({ issue, states, labels, members, onClose }: IssueDr
   }, [onClose])
 
   useEffect(() => {
+    if (!issue) return
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
-  }, [])
+  }, [issue])
 
   if (!issue) return null
 

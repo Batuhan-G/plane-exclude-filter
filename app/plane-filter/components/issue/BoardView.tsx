@@ -142,7 +142,7 @@ function BoardCard({ issue, labels, members, issueUrl, onClick }: BoardCardProps
       {(issue.labels.length > 0 || issue.assignees.length > 0) && (
         <div className={styles.cardFooter}>
           <div className={styles.cardLabels}>
-            {issue.labels.slice(0, 2).map(lid => {
+            {issue.labels.map(lid => {
               const lObj = labels.find(l => l.id === lid)
               if (!lObj) return null
               return (
@@ -155,9 +155,6 @@ function BoardCard({ issue, labels, members, issueUrl, onClick }: BoardCardProps
                 </span>
               )
             })}
-            {issue.labels.length > 2 && (
-              <span className={styles.moreLabels}>+{issue.labels.length - 2}</span>
-            )}
           </div>
           <div className={styles.assigneeGroup}>
             {issue.assignees.map(aid => {

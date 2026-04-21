@@ -7,6 +7,7 @@ import { useFilter } from '@/hooks/useFilter'
 import { Header } from './components/layout/Header'
 import { MainContent } from './components/layout/MainContent'
 import { IssueDrawer } from './components/issue/IssueDrawer'
+import { ScrollToTop } from './components/ui/ScrollToTop'
 import type { RawIssue } from '@/lib/types'
 import styles from './page.module.css'
 
@@ -44,6 +45,7 @@ export default function PlaneFilterPage() {
 
   return (
     <div className={styles.page}>
+      <ScrollToTop />
       <IssueDrawer
         issue={selectedIssue}
         states={planeData.states}

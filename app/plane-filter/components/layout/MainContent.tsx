@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { FilterPanel } from '../filter/FilterPanel'
 import { IssueList } from '../issue/IssueList'
 import { BoardView } from '../issue/BoardView'
 import { Spinner } from '../ui/Spinner'
-import type { RawIssue, FilterSet, PlaneMember, PlaneLabel, PlaneState, PlaneProject } from '@/lib/types'
+import type { RawIssue, FilterSet, PlaneMember, PlaneLabel, PlaneState, PlaneProject, Priority } from '@/lib/types'
 import styles from './MainContent.module.css'
 
 interface MainContentProps {
@@ -28,6 +28,12 @@ interface MainContentProps {
 }
 
 type ViewMode = 'list' | 'board'
+type SortField = 'created' | 'priority'
+type SortDir = 'asc' | 'desc'
+
+const PRIORITY_ORDER: Record<Priority, number> = {
+  urgent: 0, high: 1, medium: 2, low: 3, none: 4,
+}
 
 export function MainContent({
   error,
@@ -48,6 +54,44 @@ export function MainContent({
   onSelectIssue,
 }: MainContentProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [sortField, setSortField] = useState<SortField>('created')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  function handleSortField(field: SortField) {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDir('desc')
+    }
+  }
+
+  const sorted = useMemo(() => {
+    if (!filtered) return null
+    return [...filtered].sort((a, b) => {
+      if (sortField === 'created') {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0
+        return sortDir === 'desc' ? tb - ta : ta - tb
+      } else {
+        const pa = PRIORITY_ORDER[a.priority] ?? 4
+        const pb = PRIORITY_ORDER[b.priority] ?? 4
+        return sortDir === 'asc' ? pa - pb : pb - pa
+      }
+    })
+  }, [filtered, sortField, sortDir])
+
+  const DirArrow = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return null
+    return (
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {sortDir === 'desc'
+          ? <><line x1="5" y1="1" x2="5" y2="9" /><polyline points="2,6 5,9 8,6" /></>
+          : <><line x1="5" y1="9" x2="5" y2="1" /><polyline points="2,4 5,1 8,4" /></>
+        }
+      </svg>
+    )
+  }
 
   return (
     <div className={styles.wrapper}>
@@ -99,9 +143,27 @@ export function MainContent({
 
       {/* ─── Right Content ─── */}
       <div className={styles.content}>
-        {filtered !== null && (
+        {sorted !== null && (
           <>
             <div className={styles.toolbar}>
+              {/* Sort controls */}
+              <div className={styles.sortControls}>
+                <span className={styles.sortLabel}>Sort</span>
+                <button
+                  className={`${styles.sortBtn} ${sortField === 'created' ? styles.sortBtnActive : ''}`}
+                  onClick={() => handleSortField('created')}
+                >
+                  Created <DirArrow field="created" />
+                </button>
+                <button
+                  className={`${styles.sortBtn} ${sortField === 'priority' ? styles.sortBtnActive : ''}`}
+                  onClick={() => handleSortField('priority')}
+                >
+                  Priority <DirArrow field="priority" />
+                </button>
+              </div>
+
+              {/* View switch */}
               <div className={styles.viewSwitch}>
                 <button
                   className={`${styles.viewBtn} ${viewMode === 'list' ? styles.viewBtnActive : ''}`}
@@ -113,7 +175,7 @@ export function MainContent({
                     <line x1="3" y1="8" x2="13" y2="8" />
                     <line x1="3" y1="12" x2="13" y2="12" />
                   </svg>
-                  Liste
+                  List
                 </button>
                 <button
                   className={`${styles.viewBtn} ${viewMode === 'board' ? styles.viewBtnActive : ''}`}
@@ -125,14 +187,14 @@ export function MainContent({
                     <rect x="6" y="2" width="4" height="12" rx="1" />
                     <rect x="11" y="2" width="4" height="12" rx="1" />
                   </svg>
-                  Tablo
+                  Board
                 </button>
               </div>
             </div>
 
             {viewMode === 'list' ? (
               <IssueList
-                issues={filtered}
+                issues={sorted}
                 states={states}
                 labels={labels}
                 members={members}
@@ -141,7 +203,7 @@ export function MainContent({
               />
             ) : (
               <BoardView
-                issues={filtered}
+                issues={sorted}
                 states={states}
                 labels={labels}
                 members={members}

@@ -10,6 +10,7 @@ export interface RawIssue {
   labels: string[]
   project: string
   description_html?: string
+  created_at?: string
 }
 
 export interface PlanePriority {
