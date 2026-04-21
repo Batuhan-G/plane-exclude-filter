@@ -1,0 +1,66 @@
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panelTitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+}
+
+.clearBtn {
+  font-size: 12px;
+  color: var(--text2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  transition: color 0.15s, background 0.15s;
+}
+
+.clearBtn:hover {
+  color: var(--text);
+  background: var(--bg4);
+}
+
+.panelInclude {
+  border-left: 3px solid #4caf7d;
+}
+
+.panelExclude {
+  border-left: 3px solid #ff4d4d;
+}
+
+.panelTitleDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 7px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+.panelTitleDotInclude {
+  background: #4caf7d;
+}
+
+.panelTitleDotExclude {
+  background: #ff4d4d;
+}

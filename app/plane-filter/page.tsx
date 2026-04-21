@@ -1,383 +1,50 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import type { PlaneLabel, PlaneMember, PlaneProject, PlaneState } from '@/lib/types'
+import { useState } from 'react'
+import { usePlaneData } from '@/hooks/usePlaneData'
+import { useIssues } from '@/hooks/useIssues'
+import { useFilter } from '@/hooks/useFilter'
+import { FilterPanel } from './components/filter/FilterPanel'
+import { IssueList } from './components/issue/IssueList'
+import { IssueDrawer } from './components/issue/IssueDrawer'
+import { Spinner } from './components/ui/Spinner'
+import type { RawIssue } from '@/lib/types'
 import styles from './page.module.css'
 
-function sanitizeDescHtml(html: string, issueUrl: string | null): string {
-  const placeholder = issueUrl
-    ? `<a href="${issueUrl}" target="_blank" rel="noreferrer" class="planePlaceholderImg">&#128444; Image (view in Plane)</a>`
-    : '<span class="planePlaceholderImg">&#128444; Image</span>'
-  return html
-    .replace(/<img[^>]*\/?>/gi, placeholder)
-    .replace(/<image-component[^>]*>[\s\S]*?<\/image-component>/gi, placeholder)
-    .replace(/<image-component[^/]*\/>/gi, placeholder)
-}
-
-function TaskDrawer({
-  issue,
-  states,
-  labels,
-  members,
-  priorityConfig,
-  onClose,
-}: {
-  issue: RawIssue | null
-  states: PlaneState[]
-  labels: PlaneLabel[]
-  members: PlaneMember[]
-  priorityConfig: Record<string, { label: string; color: string }>
-  onClose: () => void
-}) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  const open = issue !== null
-
-  if (!open) return null
-
-  const priority = (issue.priority as string) ?? 'none'
-  const p = priorityConfig[priority] ?? priorityConfig.none
-  const stateId = issue.state as string
-  const stateObj = states.find(s => s.id === stateId)
-  const labelIds = (issue.labels as string[]) ?? []
-  const assigneeIds = (issue.assignees as string[]) ?? []
-  const appUrl = process.env.NEXT_PUBLIC_PLANE_APP_URL
-  const workspace = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG
-  const issueUrl = appUrl && workspace
-    ? `${appUrl}/${workspace}/projects/${issue.project as string}/issues/${issue.id as string}/`
-    : null
-  const descHtml = sanitizeDescHtml((issue.description_html as string) ?? '', issueUrl)
-
-  return (
-    <>
-      <div className={styles.drawerOverlay} onClick={onClose} />
-      <aside className={styles.drawer}>
-        <div className={styles.drawerHeader}>
-          <span className={styles.drawerIssueId}>#{issue.sequence_id as number}</span>
-          <button className={styles.drawerClose} onClick={onClose} aria-label="Close">✕</button>
-        </div>
-
-        <h2 className={styles.drawerTitle}>{issue.name as string}</h2>
-
-        <div className={styles.drawerMeta}>
-          <span className={styles.drawerPriority} style={{ background: p.color + '22', borderColor: p.color + '55', color: p.color }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: p.color, display: 'inline-block', flexShrink: 0 }} />
-            {p.label}
-          </span>
-
-          {stateObj && (
-            <span className={styles.stateBadge} style={{ borderColor: stateObj.color + '55', color: stateObj.color }}>
-              {stateObj.name}
-            </span>
-          )}
-
-          {labelIds.map(lid => {
-            const lObj = labels.find(l => l.id === lid)
-            if (!lObj) return null
-            return (
-              <span key={lid} className={styles.labelBadge} style={{ background: lObj.color + '1a', borderColor: lObj.color + '44', color: lObj.color }}>
-                {lObj.name}
-              </span>
-            )
-          })}
-        </div>
-
-        {assigneeIds.length > 0 && (
-          <div className={styles.drawerAssignees}>
-            <span className={styles.drawerMetaLabel}>ASSIGNEES</span>
-            <div className={styles.drawerAssigneeList}>
-              {assigneeIds.map(aid => {
-                const mObj = members.find(m => m.id === aid)
-                if (!mObj) return null
-                return (
-                  <div key={aid} className={styles.drawerAssigneeItem}>
-                    <Avatar name={mObj.name} size={22} />
-                    <span>{mObj.name}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {descHtml && descHtml !== '<p></p>' ? (
-          <div className={styles.drawerDescWrap}>
-            <span className={styles.drawerMetaLabel}>DESCRIPTION</span>
-            <div
-              className={styles.drawerDescription}
-              dangerouslySetInnerHTML={{ __html: descHtml }}
-            />
-          </div>
-        ) : (
-          <div className={styles.drawerNoDesc}>No description</div>
-        )}
-      </aside>
-    </>
-  )
-}
-
-const PRIORITY_CONFIG = {
-  urgent: { label: 'Urgent', color: '#ff4d4d' },
-  high:   { label: 'High',   color: '#ff8c42' },
-  medium: { label: 'Medium', color: '#f5c518' },
-  low:    { label: 'Low',    color: '#4caf7d' },
-  none:   { label: 'None',   color: '#505050' },
-}
-
-async function api<T>(action: string, project?: string, bust = false): Promise<T> {
-  const params = new URLSearchParams({ action })
-  if (project) params.set('project', project)
-  if (bust) params.set('bust', Date.now().toString())
-  const res = await fetch(`/api/plane?${params}`)
-  if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err.error ?? `HTTP ${res.status}`)
-  }
-  return res.json()
-}
-
-function Avatar({ name, size = 24 }: { name: string; size?: number }) {
-  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-  const hue = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0,
-      background: `hsl(${hue},45%,35%)`, display: 'flex', alignItems: 'center',
-      justifyContent: 'center', fontSize: size * 0.38, fontWeight: 600,
-      color: `hsl(${hue},60%,85%)`, fontFamily: 'var(--mono)',
-    }}>
-      {initials}
-    </div>
-  )
-}
-
-function Tag({ label, color, onRemove }: { label: string; color?: string; onRemove: () => void }) {
-  return (
-    <span className={styles.tag} style={color ? { background: color + '22', borderColor: color + '55', color } : {}}>
-      {color && <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />}
-      {label}
-      <button className={styles.tagRemove} onClick={onRemove} aria-label="Remove">×</button>
-    </span>
-  )
-}
-
-function FilterInput<T extends { id: string; name: string; color?: string }>({
-  label,
-  items,
-  selected,
-  onAdd,
-  onRemove,
-  renderItem,
-}: {
-  label: string
-  items: T[]
-  selected: T[]
-  onAdd: (item: T) => void
-  onRemove: (id: string) => void
-  renderItem?: (item: T) => React.ReactNode
-}) {
-  const [query, setQuery] = useState('')
-  const [open, setOpen] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const wrapRef = useRef<HTMLDivElement>(null)
-
-  const filtered = items.filter(
-    i => i.name.toLowerCase().includes(query.toLowerCase()) && !selected.find(s => s.id === i.id)
-  )
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  return (
-    <div className={styles.filterRow}>
-      <span className={styles.filterLabel}>{label}</span>
-      <div className={styles.filterRight} ref={wrapRef}>
-        <div className={styles.tagInput} onClick={() => { setOpen(true); inputRef.current?.focus() }}>
-          {selected.map(s => (
-            <Tag
-              key={s.id}
-              label={s.name}
-              color={s.color}
-              onRemove={() => onRemove(s.id)}
-            />
-          ))}
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={e => { setQuery(e.target.value); setOpen(true) }}
-            onFocus={() => setOpen(true)}
-            placeholder={selected.length === 0 ? 'Select...' : ''}
-            className={styles.tagInputField}
-          />
-        </div>
-        {open && filtered.length > 0 && (
-          <div className={styles.dropdown}>
-            {filtered.map(item => (
-              <button
-                key={item.id}
-                className={styles.dropdownItem}
-                onMouseDown={e => { e.preventDefault(); onAdd(item); setQuery('') }}
-              >
-                {renderItem ? renderItem(item) : item.name}
-              </button>
-            ))}
-          </div>
-        )}
-        {open && filtered.length === 0 && query && (
-          <div className={styles.dropdown}>
-            <div className={styles.dropdownEmpty}>No results</div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-type RawIssue = Record<string, unknown>
-
-type FilterSet<A, L, S> = {
-  assignees: A[]
-  labels: L[]
-  states: S[]
-}
-
-const EMPTY_FILTER = { assignees: [], labels: [], states: [] }
-
 export default function PlaneFilterPage() {
-  const [projects, setProjects] = useState<PlaneProject[]>([])
   const [selectedProject, setSelectedProject] = useState('')
-  const [members, setMembers] = useState<PlaneMember[]>([])
-  const [labels, setLabels] = useState<PlaneLabel[]>([])
-  const [states, setStates] = useState<PlaneState[]>([])
-
-  const [include, setInclude] = useState<FilterSet<PlaneMember, PlaneLabel, PlaneState>>(EMPTY_FILTER)
-  const [exclude, setExclude] = useState<FilterSet<PlaneMember, PlaneLabel, PlaneState>>(EMPTY_FILTER)
-
-  const [syncing, setSyncing] = useState(false)
-  const [loadingProject, setLoadingProject] = useState(false)
-  const [error, setError] = useState('')
-  const [allIssues, setAllIssues] = useState<RawIssue[]>([])
-  const [filtered, setFiltered] = useState<RawIssue[] | null>(null)
   const [selectedIssue, setSelectedIssue] = useState<RawIssue | null>(null)
 
-  useEffect(() => {
-    api<PlaneProject[]>('projects')
-      .then(setProjects)
-      .catch(e => setError(e.message))
-  }, [])
+  const planeData = usePlaneData()
+  const issues = useIssues()
+  const filter = useFilter(issues.allIssues)
 
-  async function fetchIssues(id: string, bust = false) {
-    try {
-      const all = await api<RawIssue[]>('issues', id, bust)
-      setAllIssues(all)
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
+  const error = planeData.error || issues.error
 
   async function handleProjectChange(id: string) {
     setSelectedProject(id)
-    setAllIssues([])
-    setFiltered(null)
-    setInclude(EMPTY_FILTER)
-    setExclude(EMPTY_FILTER)
-    setError('')
+    issues.reset()
+    filter.reset()
     if (!id) return
-    setLoadingProject(true)
-    try {
-      const [m, l, s] = await Promise.all([
-        api<PlaneMember[]>('members', id),
-        api<PlaneLabel[]>('labels', id),
-        api<PlaneState[]>('states', id),
-      ])
-      setMembers(m)
-      setLabels(l)
-      setStates(s)
-      await fetchIssues(id)
-    } catch (e) {
-      setError((e as Error).message)
-    }
-    setLoadingProject(false)
+    await planeData.loadProject(id)
+    await issues.fetchIssues(id)
   }
 
   async function handleSync() {
     if (!selectedProject) return
-    setSyncing(true)
-    setError('')
-    await fetchIssues(selectedProject, true)
-    setSyncing(false)
+    await issues.sync(selectedProject)
   }
-
-  useEffect(() => {
-    if (allIssues.length === 0) {
-      setFiltered(null)
-      return
-    }
-    const inAssigneeIds = new Set(include.assignees.map(a => a.id))
-    const inLabelIds    = new Set(include.labels.map(l => l.id))
-    const inStateIds    = new Set(include.states.map(s => s.id))
-    const exAssigneeIds = new Set(exclude.assignees.map(a => a.id))
-    const exLabelIds    = new Set(exclude.labels.map(l => l.id))
-    const exStateIds    = new Set(exclude.states.map(s => s.id))
-
-    setFiltered(allIssues.filter(issue => {
-      const assigneeIds = (issue.assignees as string[]) ?? []
-      const labelIds    = (issue.labels as string[]) ?? []
-      const stateId     = (issue.state as string) ?? ''
-
-      if (inAssigneeIds.size > 0 && !assigneeIds.some(id => inAssigneeIds.has(id))) return false
-      if (inLabelIds.size > 0    && !labelIds.some(id => inLabelIds.has(id)))        return false
-      if (inStateIds.size > 0    && !inStateIds.has(stateId))                        return false
-
-      if (exAssigneeIds.size > 0 && assigneeIds.some(id => exAssigneeIds.has(id))) return false
-      if (exLabelIds.size > 0    && labelIds.some(id => exLabelIds.has(id)))        return false
-      if (exStateIds.size > 0    && exStateIds.has(stateId))                        return false
-
-      return true
-    }))
-  }, [allIssues, include, exclude])
-
-  const hasIncludeFilters =
-    include.assignees.length > 0 || include.labels.length > 0 || include.states.length > 0
-
-  const hasExcludeFilters =
-    exclude.assignees.length > 0 || exclude.labels.length > 0 || exclude.states.length > 0
-
-  const priorityConfig = PRIORITY_CONFIG as Record<string, { label: string; color: string }>
-
-  const memberRenderer = (item: PlaneMember) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <Avatar name={item.name} size={20} />
-      <span>{item.name}</span>
-    </div>
-  )
-
-  const coloredItemRenderer = (item: PlaneLabel | PlaneState) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
-      <span>{item.name}</span>
-    </div>
-  )
 
   return (
     <div className={styles.page}>
-      <TaskDrawer
+      <IssueDrawer
         issue={selectedIssue}
-        states={states}
-        labels={labels}
-        members={members}
-        priorityConfig={priorityConfig}
+        states={planeData.states}
+        labels={planeData.labels}
+        members={planeData.members}
         onClose={() => setSelectedIssue(null)}
       />
+
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <div className={styles.logo}>
@@ -385,15 +52,15 @@ export default function PlaneFilterPage() {
             <span>plane<span className={styles.logoAccent}>filter</span></span>
           </div>
           <div className={styles.headerStats}>
-            {filtered !== null && (
+            {filter.filtered !== null && (
               <>
                 <span className={styles.statChip}>
-                  <span className={styles.statNum}>{filtered.length}</span>
+                  <span className={styles.statNum}>{filter.filtered.length}</span>
                   <span className={styles.statLabel}>shown</span>
                 </span>
                 <span className={styles.statDivider} />
                 <span className={styles.statChip}>
-                  <span className={styles.statNum}>{allIssues.length - filtered.length}</span>
+                  <span className={styles.statNum}>{issues.allIssues.length - filter.filtered.length}</span>
                   <span className={styles.statLabel}>excluded</span>
                 </span>
                 <span className={styles.statDivider} />
@@ -403,9 +70,9 @@ export default function PlaneFilterPage() {
               <button
                 className={styles.syncBtn}
                 onClick={handleSync}
-                disabled={syncing || loadingProject}
+                disabled={issues.syncing || planeData.loadingProject}
               >
-                {syncing ? <><span className={styles.spinnerDark} /> Syncing...</> : 'Sync'}
+                {issues.syncing ? <><Spinner variant="dark" /> Syncing...</> : 'Sync'}
               </button>
             )}
           </div>
@@ -415,169 +82,55 @@ export default function PlaneFilterPage() {
       <main className={styles.main}>
         {error && <div className={styles.error}>{error}</div>}
 
-        <div className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <span className={styles.panelTitle}>PROJECT</span>
-            {loadingProject && <span className={styles.spinner} />}
+        <div className={styles.projectPanel}>
+          <div className={styles.projectPanelHeader}>
+            <span className={styles.projectPanelTitle}>PROJECT</span>
+            {planeData.loadingProject && <Spinner />}
           </div>
           <select
             className={styles.select}
             value={selectedProject}
             onChange={e => handleProjectChange(e.target.value)}
-            disabled={projects.length === 0}
+            disabled={planeData.projects.length === 0}
           >
             <option value="">— Select project —</option>
-            {projects.map(p => (
+            {planeData.projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
         </div>
 
-        {selectedProject && !loadingProject && (
+        {selectedProject && !planeData.loadingProject && (
           <>
-            <div className={`${styles.panel} ${styles.panelInclude}`}>
-              <div className={styles.panelHeader}>
-                <span className={styles.panelTitle}>
-                  <span className={`${styles.panelTitleDot} ${styles.panelTitleDotInclude}`} />
-                  INCLUDE FILTERS
-                </span>
-                {hasIncludeFilters && (
-                  <button className={styles.clearBtn} onClick={() => setInclude(EMPTY_FILTER)}>Clear</button>
-                )}
-              </div>
-
-              <FilterInput
-                label="Assignee"
-                items={members}
-                selected={include.assignees}
-                onAdd={item => setInclude(prev => ({ ...prev, assignees: [...prev.assignees, item] }))}
-                onRemove={id => setInclude(prev => ({ ...prev, assignees: prev.assignees.filter(a => a.id !== id) }))}
-                renderItem={memberRenderer}
-              />
-              <FilterInput
-                label="Label"
-                items={labels}
-                selected={include.labels}
-                onAdd={item => setInclude(prev => ({ ...prev, labels: [...prev.labels, item] }))}
-                onRemove={id => setInclude(prev => ({ ...prev, labels: prev.labels.filter(l => l.id !== id) }))}
-                renderItem={coloredItemRenderer}
-              />
-              <FilterInput
-                label="State"
-                items={states}
-                selected={include.states}
-                onAdd={item => setInclude(prev => ({ ...prev, states: [...prev.states, item] }))}
-                onRemove={id => setInclude(prev => ({ ...prev, states: prev.states.filter(s => s.id !== id) }))}
-                renderItem={coloredItemRenderer}
-              />
-            </div>
-
-            <div className={`${styles.panel} ${styles.panelExclude}`}>
-              <div className={styles.panelHeader}>
-                <span className={styles.panelTitle}>
-                  <span className={`${styles.panelTitleDot} ${styles.panelTitleDotExclude}`} />
-                  EXCLUDE FILTERS
-                </span>
-                {hasExcludeFilters && (
-                  <button className={styles.clearBtn} onClick={() => setExclude(EMPTY_FILTER)}>Clear</button>
-                )}
-              </div>
-
-              <FilterInput
-                label="Assignee"
-                items={members}
-                selected={exclude.assignees}
-                onAdd={item => setExclude(prev => ({ ...prev, assignees: [...prev.assignees, item] }))}
-                onRemove={id => setExclude(prev => ({ ...prev, assignees: prev.assignees.filter(a => a.id !== id) }))}
-                renderItem={memberRenderer}
-              />
-              <FilterInput
-                label="Label"
-                items={labels}
-                selected={exclude.labels}
-                onAdd={item => setExclude(prev => ({ ...prev, labels: [...prev.labels, item] }))}
-                onRemove={id => setExclude(prev => ({ ...prev, labels: prev.labels.filter(l => l.id !== id) }))}
-                renderItem={coloredItemRenderer}
-              />
-              <FilterInput
-                label="State"
-                items={states}
-                selected={exclude.states}
-                onAdd={item => setExclude(prev => ({ ...prev, states: [...prev.states, item] }))}
-                onRemove={id => setExclude(prev => ({ ...prev, states: prev.states.filter(s => s.id !== id) }))}
-                renderItem={coloredItemRenderer}
-              />
-
-            </div>
+            <FilterPanel
+              variant="include"
+              members={planeData.members}
+              labels={planeData.labels}
+              states={planeData.states}
+              filter={filter.include}
+              onChange={filter.setInclude}
+              onClear={filter.reset}
+            />
+            <FilterPanel
+              variant="exclude"
+              members={planeData.members}
+              labels={planeData.labels}
+              states={planeData.states}
+              filter={filter.exclude}
+              onChange={filter.setExclude}
+              onClear={() => filter.setExclude({ assignees: [], labels: [], states: [] })}
+            />
           </>
         )}
 
-        {filtered !== null && (
-          <div className={styles.results}>
-            {filtered.length === 0 ? (
-              <div className={styles.empty}>
-                <span className={styles.emptyIcon}>◎</span>
-                <p>No matching issues found</p>
-              </div>
-            ) : (
-              <div className={styles.issueList}>
-                {filtered.map(issue => {
-                  const priority = (issue.priority as string) ?? 'none'
-                  const p = priorityConfig[priority] ?? priorityConfig.none
-                  const stateId = issue.state as string
-                  const stateObj = states.find(s => s.id === stateId)
-                  const labelIds = (issue.labels as string[]) ?? []
-                  const assigneeIds = (issue.assignees as string[]) ?? []
-
-                  return (
-                    <div key={issue.id as string} className={styles.issueRow} onClick={() => setSelectedIssue(issue)} style={{ cursor: 'pointer' }}>
-                      <span
-                        className={styles.priorityDot}
-                        style={{ background: p.color }}
-                        title={p.label}
-                      />
-                      <div className={styles.issueMain}>
-                        <div className={styles.issueTitle}>
-                          <span className={styles.issueId}>#{issue.sequence_id as number}</span>
-                          {issue.name as string}
-                        </div>
-                        <div className={styles.issueMeta}>
-                          {stateObj && (
-                            <span
-                              className={styles.stateBadge}
-                              style={{ borderColor: stateObj.color + '55', color: stateObj.color }}
-                            >
-                              {stateObj.name}
-                            </span>
-                          )}
-                          {labelIds.map(lid => {
-                            const lObj = labels.find(l => l.id === lid)
-                            if (!lObj) return null
-                            return (
-                              <span
-                                key={lid}
-                                className={styles.labelBadge}
-                                style={{ background: lObj.color + '1a', borderColor: lObj.color + '44', color: lObj.color }}
-                              >
-                                {lObj.name}
-                              </span>
-                            )
-                          })}
-                          <div className={styles.assigneeGroup}>
-                            {assigneeIds.map(aid => {
-                              const mObj = members.find(m => m.id === aid)
-                              if (!mObj) return null
-                              return <Avatar key={aid} name={mObj.name} size={20} />
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+        {filter.filtered !== null && (
+          <IssueList
+            issues={filter.filtered}
+            states={planeData.states}
+            labels={planeData.labels}
+            members={planeData.members}
+            onSelectIssue={setSelectedIssue}
+          />
         )}
       </main>
     </div>

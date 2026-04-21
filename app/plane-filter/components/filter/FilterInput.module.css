@@ -1,0 +1,98 @@
+.filterRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.filterLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  min-width: 72px;
+  padding-top: 9px;
+  flex-shrink: 0;
+}
+
+.filterRight {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+.tagInput {
+  min-height: 38px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  cursor: text;
+  transition: border-color 0.15s;
+}
+
+.tagInput:focus-within {
+  border-color: var(--accent);
+}
+
+.tagInputField {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  outline: none;
+  min-width: 80px;
+  flex: 1;
+  padding: 2px 0;
+}
+
+.tagInputField::placeholder {
+  color: var(--text3);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dropdownItem {
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+}
+
+.dropdownItem:hover {
+  background: var(--bg4);
+}
+
+.dropdownEmpty {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text3);
+}
+
+@media (max-width: 520px) {
+  .filterRow { flex-direction: column; gap: 4px; }
+  .filterLabel { padding-top: 0; }
+}
