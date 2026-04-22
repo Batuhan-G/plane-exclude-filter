@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { usePlaneData } from '@/hooks/usePlaneData'
 import { useIssues } from '@/hooks/useIssues'
 import { useFilter } from '@/hooks/useFilter'
+import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
 import { Header } from './components/layout/Header'
 import { MainContent } from './components/layout/MainContent'
 import { IssueDrawer } from './components/issue/IssueDrawer'
@@ -23,6 +24,15 @@ export default function PlaneFilterPage() {
   const filter = useFilter(issues.allIssues)
 
   const selectedProjectObj = planeData.projects.find(p => p.id === selectedProject)
+
+  const newCount = useMemo(
+    () => issues.allIssues.filter(i => isNewIssue(i.created_at)).length,
+    [issues.allIssues]
+  )
+  const updatedCount = useMemo(
+    () => issues.allIssues.filter(i => isUpdatedIssue(i.created_at, i.updated_at)).length,
+    [issues.allIssues]
+  )
 
   function getIssueUrl(issue: RawIssue): string {
     if (!PLANE_WORKSPACE || !selectedProjectObj) return ''
@@ -74,9 +84,13 @@ export default function PlaneFilterPage() {
         filtered={filter.filtered}
         include={filter.include}
         exclude={filter.exclude}
+        activityFilter={filter.activityFilter}
+        newCount={newCount}
+        updatedCount={updatedCount}
         onProjectChange={handleProjectChange}
         onIncludeChange={filter.setInclude}
         onExcludeChange={filter.setExclude}
+        onActivityFilterChange={filter.setActivityFilter}
         onFilterReset={filter.reset}
         getIssueUrl={getIssueUrl}
         onSelectIssue={setSelectedIssue}

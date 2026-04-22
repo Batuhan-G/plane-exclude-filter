@@ -1,9 +1,27 @@
-import type { FilterSet, RawIssue } from './types'
+import type { ActivityFilter, FilterSet, RawIssue } from './types'
+
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
+
+export function isNewIssue(createdAt: string | undefined): boolean {
+  if (!createdAt) return false
+  return Date.now() - new Date(createdAt).getTime() < TWENTY_FOUR_HOURS
+}
+
+export function isUpdatedIssue(createdAt: string | undefined, updatedAt: string | undefined): boolean {
+  if (!createdAt || !updatedAt) return false
+  const created = new Date(createdAt).getTime()
+  const updated = new Date(updatedAt).getTime()
+  return (
+    Date.now() - updated < TWENTY_FOUR_HOURS &&
+    updated - created > 30_000
+  )
+}
 
 export function applyFilter(
   issues: RawIssue[],
   include: FilterSet,
   exclude: FilterSet,
+  activity?: ActivityFilter,
 ): RawIssue[] {
   const inAssigneeIds  = new Set(include.assignees.map(a => a.id))
   const inLabelIds     = new Set(include.labels.map(l => l.id))
@@ -14,7 +32,7 @@ export function applyFilter(
   const exStateIds     = new Set(exclude.states.map(s => s.id))
   const exPriorityIds  = new Set(exclude.priorities.map(p => p.id))
 
-  return issues.filter(issue => {
+  let result = issues.filter(issue => {
     if (inAssigneeIds.size > 0  && !issue.assignees.some(id => inAssigneeIds.has(id))) return false
     if (inLabelIds.size > 0     && !issue.labels.some(id => inLabelIds.has(id)))        return false
     if (inStateIds.size > 0     && !inStateIds.has(issue.state))                        return false
@@ -27,4 +45,17 @@ export function applyFilter(
 
     return true
   })
+
+  if (activity && activity.enabled && (activity.showNewOnly || activity.showUpdatedOnly)) {
+    result = result.filter(issue => {
+      const isNew = isNewIssue(issue.created_at)
+      const isUpd = isUpdatedIssue(issue.created_at, issue.updated_at)
+      if (activity.showNewOnly && activity.showUpdatedOnly) return isNew || isUpd
+      if (activity.showNewOnly) return isNew
+      if (activity.showUpdatedOnly) return isUpd
+      return true
+    })
+  }
+
+  return result
 }

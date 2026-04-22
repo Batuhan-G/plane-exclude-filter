@@ -178,6 +178,11 @@
   gap: 6px;
 }
 
+.activityBorder {
+  border-left: 3px solid var(--activity-color);
+  padding-left: 9px;
+}
+
 /* ─── Empty state ─────────────────────────────────────── */
 .empty {
   display: flex;

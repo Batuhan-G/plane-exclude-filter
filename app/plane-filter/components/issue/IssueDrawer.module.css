@@ -212,3 +212,95 @@
   border-top: 1px solid var(--border);
   padding-top: 14px;
 }
+
+/* Attachments */
+.drawerAttachSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.attachLoading {
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.attachList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attachItem {
+  display: contents;
+}
+
+.attachImageWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-decoration: none;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  transition: border-color 0.15s;
+}
+
+.attachImageWrap:hover {
+  border-color: var(--accent);
+}
+
+.attachImage {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.attachImageName {
+  font-size: 11px;
+  color: var(--text3);
+  padding: 4px 8px 6px;
+  background: var(--bg3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachFile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  text-decoration: none;
+  color: var(--text2);
+  font-size: 13px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.attachFile:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.attachFileIcon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.attachFileName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachFileSize {
+  font-size: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}

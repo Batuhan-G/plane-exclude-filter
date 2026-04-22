@@ -1,4 +1,5 @@
 import { IssueRow } from './IssueRow'
+import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
 import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
 import styles from './IssueList.module.css'
 
@@ -26,17 +27,23 @@ export function IssueList({ issues, states, labels, members, getIssueUrl, onSele
   return (
     <div className={styles.results}>
       <div className={styles.issueList}>
-        {issues.map(issue => (
-          <IssueRow
-            key={issue.id}
-            issue={issue}
-            states={states}
-            labels={labels}
-            members={members}
-            issueUrl={getIssueUrl?.(issue)}
-            onClick={() => onSelectIssue(issue)}
-          />
-        ))}
+        {issues.map(issue => {
+          const isNew = isNewIssue(issue.created_at)
+          const isUpdated = isUpdatedIssue(issue.created_at, issue.updated_at)
+          return (
+            <IssueRow
+              key={issue.id}
+              issue={issue}
+              states={states}
+              labels={labels}
+              members={members}
+              issueUrl={getIssueUrl?.(issue)}
+              isNew={isNew}
+              isUpdated={isUpdated}
+              onClick={() => onSelectIssue(issue)}
+            />
+          )
+        })}
       </div>
     </div>
   )

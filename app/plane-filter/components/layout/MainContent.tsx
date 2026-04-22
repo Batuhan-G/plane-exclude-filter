@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from 'react'
 import { FilterPanel } from '../filter/FilterPanel'
+import { ActivityFilterPanel } from '../filter/ActivityFilterPanel'
 import { IssueList } from '../issue/IssueList'
 import { BoardView } from '../issue/BoardView'
 import { Spinner } from '../ui/Spinner'
-import type { RawIssue, FilterSet, PlaneMember, PlaneLabel, PlaneState, PlaneProject, Priority } from '@/lib/types'
+import type { ActivityFilter, RawIssue, FilterSet, PlaneMember, PlaneLabel, PlaneState, PlaneProject, Priority } from '@/lib/types'
 import styles from './MainContent.module.css'
 
 interface MainContentProps {
@@ -19,9 +20,13 @@ interface MainContentProps {
   filtered: RawIssue[] | null
   include: FilterSet
   exclude: FilterSet
+  activityFilter: ActivityFilter
+  newCount: number
+  updatedCount: number
   onProjectChange: (id: string) => void
   onIncludeChange: (filter: FilterSet) => void
   onExcludeChange: (filter: FilterSet) => void
+  onActivityFilterChange: (filter: ActivityFilter) => void
   onFilterReset: () => void
   getIssueUrl: (issue: RawIssue) => string
   onSelectIssue: (issue: RawIssue) => void
@@ -46,9 +51,13 @@ export function MainContent({
   filtered,
   include,
   exclude,
+  activityFilter,
+  newCount,
+  updatedCount,
   onProjectChange,
   onIncludeChange,
   onExcludeChange,
+  onActivityFilterChange,
   onFilterReset,
   getIssueUrl,
   onSelectIssue,
@@ -136,6 +145,12 @@ export function MainContent({
               filter={exclude}
               onChange={onExcludeChange}
               onClear={() => onExcludeChange({ assignees: [], labels: [], states: [], priorities: [] })}
+            />
+            <ActivityFilterPanel
+              filter={activityFilter}
+              newCount={newCount}
+              updatedCount={updatedCount}
+              onChange={onActivityFilterChange}
             />
           </>
         )}

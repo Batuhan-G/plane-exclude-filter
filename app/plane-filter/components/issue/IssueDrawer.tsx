@@ -1,10 +1,26 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Avatar } from '../ui/Avatar'
 import { PRIORITY_CONFIG } from '@/lib/constants'
-import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
+import type { PlaneAttachment, PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
 import styles from './IssueDrawer.module.css'
+
+function getFileIcon(mimeType: string): string {
+  if (mimeType.startsWith('image/')) return '🖼'
+  if (mimeType.startsWith('video/')) return '🎬'
+  if (mimeType.startsWith('audio/')) return '🎵'
+  if (mimeType.includes('pdf')) return '📄'
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return '📊'
+  if (mimeType.includes('zip') || mimeType.includes('compressed')) return '🗜'
+  return '📎'
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 const APP_URL = process.env.NEXT_PUBLIC_PLANE_APP_URL
 const WORKSPACE = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG
@@ -28,6 +44,9 @@ export interface IssueDrawerProps {
 }
 
 export function IssueDrawer({ issue, states, labels, members, onClose }: IssueDrawerProps) {
+  const [attachments, setAttachments] = useState<PlaneAttachment[]>([])
+  const [loadingAttachments, setLoadingAttachments] = useState(false)
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
@@ -39,6 +58,16 @@ export function IssueDrawer({ issue, states, labels, members, onClose }: IssueDr
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [issue])
+
+  useEffect(() => {
+    if (!issue) { setAttachments([]); return }
+    setLoadingAttachments(true)
+    fetch(`/api/plane?action=attachments&project=${issue.project}&issue=${issue.id}`)
+      .then(r => r.json())
+      .then(data => setAttachments(Array.isArray(data) ? data : []))
+      .catch(() => setAttachments([]))
+      .finally(() => setLoadingAttachments(false))
+  }, [issue?.id, issue?.project])
 
   if (!issue) return null
 
@@ -115,6 +144,42 @@ export function IssueDrawer({ issue, states, labels, members, onClose }: IssueDr
           </div>
         ) : (
           <div className={styles.drawerNoDesc}>No description</div>
+        )}
+
+        {(loadingAttachments || attachments.length > 0) && (
+          <div className={styles.drawerAttachSection}>
+            <span className={styles.drawerMetaLabel}>ATTACHMENTS</span>
+            {loadingAttachments ? (
+              <span className={styles.attachLoading}>Loading…</span>
+            ) : (
+              <div className={styles.attachList}>
+                {attachments.map(att => {
+                  const isImage = att.attributes.type.startsWith('image/')
+                  const proxyUrl = `/api/plane?action=asset&url=${encodeURIComponent(att.asset)}`
+                  return (
+                    <div key={att.id} className={styles.attachItem}>
+                      {isImage ? (
+                        <a href={proxyUrl} target="_blank" rel="noreferrer" className={styles.attachImageWrap}>
+                          <img src={proxyUrl} alt={att.attributes.name} className={styles.attachImage} />
+                          <span className={styles.attachImageName}>{att.attributes.name}</span>
+                        </a>
+                      ) : (
+                        <a
+                          href={`${proxyUrl}&name=${encodeURIComponent(att.attributes.name)}`}
+                          download={att.attributes.name}
+                          className={styles.attachFile}
+                        >
+                          <span className={styles.attachFileIcon}>{getFileIcon(att.attributes.type)}</span>
+                          <span className={styles.attachFileName}>{att.attributes.name}</span>
+                          <span className={styles.attachFileSize}>{formatSize(att.attributes.size)}</span>
+                        </a>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         )}
       </aside>
     </>

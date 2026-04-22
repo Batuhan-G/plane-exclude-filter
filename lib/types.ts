@@ -11,6 +11,7 @@ export interface RawIssue {
   project: string
   description_html?: string
   created_at?: string
+  updated_at?: string
 }
 
 export interface PlanePriority {
@@ -49,4 +50,26 @@ export interface PlaneState {
   name: string
   color: string
   group: 'backlog' | 'unstarted' | 'started' | 'completed' | 'cancelled'
+}
+
+export interface ActivityFilter {
+  showNewOnly: boolean
+  showUpdatedOnly: boolean
+  enabled: boolean
+}
+
+export const DEFAULT_ACTIVITY_FILTER: ActivityFilter = {
+  showNewOnly: false,
+  showUpdatedOnly: false,
+  enabled: true,
+}
+
+export interface PlaneAttachment {
+  id: string
+  asset: string
+  attributes: {
+    name: string
+    size: number
+    type: string
+  }
 }

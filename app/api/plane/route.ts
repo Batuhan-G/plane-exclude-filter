@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const PLANE_API = (process.env.PLANE_BASE_URL || 'https://api.plane.so') + '/api/v1'
+const PLANE_BASE = process.env.PLANE_BASE_URL || 'https://api.plane.so'
+const PLANE_API = PLANE_BASE + '/api/v1'
 const API_KEY = process.env.PLANE_API_KEY!
 const WORKSPACE = process.env.PLANE_WORKSPACE_SLUG!
 
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
   const action = searchParams.get('action')
   const projectId = searchParams.get('project')
+  const issueId = searchParams.get('issue')
 
   try {
     if (action === 'projects') {
@@ -80,6 +82,74 @@ export async function GET(req: NextRequest) {
         color: s.color ?? '#888',
       }))
       return NextResponse.json(states)
+    }
+
+    if (action === 'attachments' && projectId && issueId) {
+      const data = await planeGet(
+        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/issue-attachments/`
+      )
+      return NextResponse.json(data.results ?? data)
+    }
+
+    if (action === 'asset') {
+      const url = searchParams.get('url')
+      const filename = searchParams.get('name')
+      if (!url) return NextResponse.json({ error: 'Missing url' }, { status: 400 })
+
+      // Encode each path segment so spaces/special chars don't break the URL
+      const encodedPath = url.startsWith('http')
+        ? url
+        : url.split('/').map(encodeURIComponent).join('/')
+      const resolvedUrl = url.startsWith('http')
+        ? url
+        : `${PLANE_API}/workspaces/${WORKSPACE}/file-assets/${encodedPath}/`
+
+      const upstream = await fetch(resolvedUrl, {
+        headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY },
+        cache: 'no-store',
+      })
+      if (!upstream.ok) {
+        const body = await upstream.text()
+        return NextResponse.json({ error: `Asset fetch failed: ${upstream.status}`, resolvedUrl, body }, { status: upstream.status })
+      }
+
+      const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream'
+
+      if (contentType.startsWith('text/html')) {
+        return NextResponse.json({ error: 'Got HTML — check PLANE_BASE_URL or asset path', resolvedUrl }, { status: 502 })
+      }
+
+      // Plane may return a JSON envelope with a presigned URL instead of raw binary
+      if (contentType.includes('application/json')) {
+        const json = await upstream.json() as Record<string, unknown>
+        const presignedUrl = (json.url ?? json.signed_url ?? json.asset_url) as string | undefined
+        if (!presignedUrl) {
+          return NextResponse.json({ error: 'JSON response had no url field', json, resolvedUrl }, { status: 502 })
+        }
+        const ps = await fetch(presignedUrl, { cache: 'no-store' })
+        if (!ps.ok) {
+          return NextResponse.json({ error: `Presigned fetch failed: ${ps.status}`, presignedUrl }, { status: ps.status })
+        }
+        const psHeaders: Record<string, string> = {
+          'Content-Type': ps.headers.get('content-type') ?? 'application/octet-stream',
+          'Cache-Control': 'private, max-age=300',
+        }
+        const psCl = ps.headers.get('content-length')
+        if (psCl) psHeaders['Content-Length'] = psCl
+        if (filename) psHeaders['Content-Disposition'] = `attachment; filename="${filename}"`
+        return new NextResponse(ps.body, { headers: psHeaders })
+      }
+
+      const contentLength = upstream.headers.get('content-length')
+      const headers: Record<string, string> = {
+        'Content-Type': contentType,
+        'Cache-Control': 'private, max-age=300',
+      }
+      if (contentLength) headers['Content-Length'] = contentLength
+      if (filename) {
+        headers['Content-Disposition'] = `attachment; filename="${filename}"`
+      }
+      return new NextResponse(upstream.body, { headers })
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })

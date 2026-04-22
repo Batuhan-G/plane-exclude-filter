@@ -1,0 +1,112 @@
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panelActivity {
+  border-left: 3px solid #f0a500;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panelTitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+}
+
+.panelTitleDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f0a500;
+  margin-right: 7px;
+  flex-shrink: 0;
+  position: relative;
+  top: -1px;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggleOn {
+  background: #f0a500;
+}
+
+.toggleOff {
+  background: var(--border);
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s;
+}
+
+.toggleOn .toggleKnob {
+  left: 16px;
+}
+
+.toggleOff .toggleKnob {
+  left: 2px;
+}
+
+/* Body */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bodyDisabled {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  width: 13px;
+  height: 13px;
+  accent-color: #f0a500;
+  cursor: pointer;
+  flex-shrink: 0;
+}

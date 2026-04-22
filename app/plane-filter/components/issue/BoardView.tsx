@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Avatar } from '../ui/Avatar'
 import { PRIORITY_CONFIG } from '@/lib/constants'
+import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
 import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
 import styles from './BoardView.module.css'
 
@@ -90,17 +91,23 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
             <span className={styles.columnCount}>{colIssues.length}</span>
           </div>
           <div className={styles.cards}>
-            {colIssues.map(issue => (
-              <BoardCard
-                key={issue.id}
-                issue={issue}
-                states={states}
-                labels={labels}
-                members={members}
-                issueUrl={getIssueUrl?.(issue)}
-                onClick={() => onSelectIssue(issue)}
-              />
-            ))}
+            {colIssues.map(issue => {
+              const isNew = isNewIssue(issue.created_at)
+              const isUpdated = isUpdatedIssue(issue.created_at, issue.updated_at)
+              return (
+                <BoardCard
+                  key={issue.id}
+                  issue={issue}
+                  states={states}
+                  labels={labels}
+                  members={members}
+                  issueUrl={getIssueUrl?.(issue)}
+                  isNew={isNew}
+                  isUpdated={isUpdated}
+                  onClick={() => onSelectIssue(issue)}
+                />
+              )
+            })}
           </div>
         </div>
       ))}
@@ -113,17 +120,23 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
             <span className={styles.columnCount}>{unknownIssues.length}</span>
           </div>
           <div className={styles.cards}>
-            {unknownIssues.map(issue => (
-              <BoardCard
-                key={issue.id}
-                issue={issue}
-                states={states}
-                labels={labels}
-                members={members}
-                issueUrl={getIssueUrl?.(issue)}
-                onClick={() => onSelectIssue(issue)}
-              />
-            ))}
+            {unknownIssues.map(issue => {
+              const isNew = isNewIssue(issue.created_at)
+              const isUpdated = isUpdatedIssue(issue.created_at, issue.updated_at)
+              return (
+                <BoardCard
+                  key={issue.id}
+                  issue={issue}
+                  states={states}
+                  labels={labels}
+                  members={members}
+                  issueUrl={getIssueUrl?.(issue)}
+                  isNew={isNew}
+                  isUpdated={isUpdated}
+                  onClick={() => onSelectIssue(issue)}
+                />
+              )
+            })}
           </div>
         </div>
       )}
@@ -137,10 +150,12 @@ interface BoardCardProps {
   labels: PlaneLabel[]
   members: PlaneMember[]
   issueUrl?: string
+  isNew?: boolean
+  isUpdated?: boolean
   onClick: () => void
 }
 
-function BoardCard({ issue, labels, members, issueUrl, onClick }: BoardCardProps) {
+function BoardCard({ issue, labels, members, issueUrl, isNew, isUpdated, onClick }: BoardCardProps) {
   const [copied, setCopied] = useState(false)
   const p = PRIORITY_CONFIG[issue.priority] ?? PRIORITY_CONFIG.none
 
@@ -153,8 +168,14 @@ function BoardCard({ issue, labels, members, issueUrl, onClick }: BoardCardProps
     })
   }
 
+  const activityColor = isNew ? '#22c55e' : isUpdated ? '#3b82f6' : undefined
+
   return (
-    <div className={styles.card} onClick={onClick}>
+    <div
+      className={`${styles.card} ${activityColor ? styles.activityBorder : ''}`}
+      style={activityColor ? { '--activity-color': activityColor } as React.CSSProperties : undefined}
+      onClick={onClick}
+    >
       <div className={styles.cardTop}>
         <div className={styles.cardTopLeft}>
           <span className={styles.cardId}>#{issue.sequence_id}</span>
@@ -166,7 +187,7 @@ function BoardCard({ issue, labels, members, issueUrl, onClick }: BoardCardProps
           </span>
         </div>
         <div className={styles.cardTopRight}>
-           {issueUrl && (
+          {issueUrl && (
             <button className={styles.copyLinkBtn} onClick={handleCopyLink} title="Copy link">
               {copied ? (
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

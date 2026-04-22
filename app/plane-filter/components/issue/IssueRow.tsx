@@ -10,13 +10,17 @@ export interface IssueRowProps {
   labels: PlaneLabel[]
   members: PlaneMember[]
   issueUrl?: string
+  isNew?: boolean
+  isUpdated?: boolean
   onClick: () => void
 }
 
-export function IssueRow({ issue, states, labels, members, issueUrl, onClick }: IssueRowProps) {
+export function IssueRow({ issue, states, labels, members, issueUrl, isNew, isUpdated, onClick }: IssueRowProps) {
   const [copied, setCopied] = useState(false)
   const p = PRIORITY_CONFIG[issue.priority] ?? PRIORITY_CONFIG.none
   const stateObj = states.find(s => s.id === issue.state)
+
+  const activityColor = isNew ? '#22c55e' : isUpdated ? '#3b82f6' : undefined
 
   function handleCopyLink(e: React.MouseEvent) {
     e.stopPropagation()
@@ -28,7 +32,11 @@ export function IssueRow({ issue, states, labels, members, issueUrl, onClick }: 
   }
 
   return (
-    <div className={styles.issueRow} onClick={onClick} style={{ cursor: 'pointer' }}>
+    <div
+      className={`${styles.issueRow} ${activityColor ? styles.activityBorder : ''}`}
+      style={activityColor ? { '--activity-color': activityColor } as React.CSSProperties : undefined}
+      onClick={onClick}
+    >
       <div className={styles.issueMain}>
         <div className={styles.issueTop}>
           <span className={styles.issueId}>#{issue.sequence_id}</span>
