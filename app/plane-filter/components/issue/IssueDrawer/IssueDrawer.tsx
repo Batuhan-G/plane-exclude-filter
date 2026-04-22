@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Avatar } from '../ui/Avatar'
+import { Avatar } from '../../ui/Avatar/Avatar'
 import { PRIORITY_CONFIG } from '@/lib/constants'
-import type { PlaneAttachment, PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
+import type { PlaneAttachment } from '@/lib/types'
 import styles from './IssueDrawer.module.css'
+import type { IssueDrawerProps } from './IssueDrawer.types'
 
 function getFileIcon(mimeType: string): string {
   if (mimeType.startsWith('image/')) return '🖼'
@@ -33,14 +34,6 @@ function sanitizeDescHtml(html: string, issueUrl: string | null): string {
     .replace(/<img[^>]*\/?>/gi, placeholder)
     .replace(/<image-component[^>]*>[\s\S]*?<\/image-component>/gi, placeholder)
     .replace(/<image-component[^/]*\/>/gi, placeholder)
-}
-
-export interface IssueDrawerProps {
-  issue: RawIssue | null
-  states: PlaneState[]
-  labels: PlaneLabel[]
-  members: PlaneMember[]
-  onClose: () => void
 }
 
 export function IssueDrawer({ issue, states, labels, members, onClose }: IssueDrawerProps) {

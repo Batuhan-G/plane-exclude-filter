@@ -1,40 +1,14 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { FilterPanel } from '../filter/FilterPanel'
-import { ActivityFilterPanel } from '../filter/ActivityFilterPanel'
-import { IssueList } from '../issue/IssueList'
-import { BoardView } from '../issue/BoardView'
-import { Spinner } from '../ui/Spinner'
-import type { ActivityFilter, RawIssue, FilterSet, PlaneMember, PlaneLabel, PlaneState, PlaneProject, Priority } from '@/lib/types'
+import { FilterPanel } from '../../filter/FilterPanel/FilterPanel'
+import { ActivityFilterPanel } from '../../filter/ActivityFilterPanel/ActivityFilterPanel'
+import { IssueList } from '../../issue/IssueList/IssueList'
+import { BoardView } from '../../issue/BoardView/BoardView'
+import { Spinner } from '../../ui/Spinner/Spinner'
+import type { Priority } from '@/lib/types'
 import styles from './MainContent.module.css'
-
-interface MainContentProps {
-  error: string | null | undefined
-  projects: PlaneProject[]
-  states: PlaneState[]
-  labels: PlaneLabel[]
-  members: PlaneMember[]
-  loadingProject: boolean
-  selectedProject: string
-  filtered: RawIssue[] | null
-  include: FilterSet
-  exclude: FilterSet
-  activityFilter: ActivityFilter
-  newCount: number
-  updatedCount: number
-  onProjectChange: (id: string) => void
-  onIncludeChange: (filter: FilterSet) => void
-  onExcludeChange: (filter: FilterSet) => void
-  onActivityFilterChange: (filter: ActivityFilter) => void
-  onFilterReset: () => void
-  getIssueUrl: (issue: RawIssue) => string
-  onSelectIssue: (issue: RawIssue) => void
-}
-
-type ViewMode = 'list' | 'board'
-type SortField = 'created' | 'priority'
-type SortDir = 'asc' | 'desc'
+import type { MainContentProps, ViewMode, SortField, SortDir } from './MainContent.types'
 
 const PRIORITY_ORDER: Record<Priority, number> = {
   urgent: 0, high: 1, medium: 2, low: 3, none: 4,

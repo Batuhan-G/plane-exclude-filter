@@ -1,20 +1,9 @@
-import { FilterInput } from './FilterInput'
-import { Avatar } from '../ui/Avatar'
+import { FilterInput } from '../FilterInput/FilterInput'
+import { Avatar } from '../../ui/Avatar/Avatar'
 import { EMPTY_FILTER, PRIORITY_ITEMS } from '@/lib/constants'
-import type { FilterSet, PlaneLabel, PlaneMember, PlanePriority, PlaneState } from '@/lib/types'
+import type { PlaneLabel, PlaneMember, PlanePriority, PlaneState } from '@/lib/types'
 import styles from './FilterPanel.module.css'
-
-export type PanelVariant = 'include' | 'exclude'
-
-export interface FilterPanelProps {
-  variant: PanelVariant
-  members: PlaneMember[]
-  labels: PlaneLabel[]
-  states: PlaneState[]
-  filter: FilterSet
-  onChange: React.Dispatch<React.SetStateAction<FilterSet>>
-  onClear: () => void
-}
+import type { FilterPanelProps, PanelVariant } from './FilterPanel.types'
 
 const PANEL_LABELS: Record<PanelVariant, string> = {
   include: 'INCLUDE FILTERS',

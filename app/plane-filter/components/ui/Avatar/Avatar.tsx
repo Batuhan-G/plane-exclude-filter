@@ -1,7 +1,4 @@
-export interface AvatarProps {
-  name: string
-  size?: number
-}
+import type { AvatarProps } from './Avatar.types'
 
 export function Avatar({ name, size = 20 }: AvatarProps) {
   const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()

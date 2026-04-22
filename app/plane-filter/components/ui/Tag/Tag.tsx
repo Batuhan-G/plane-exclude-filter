@@ -1,10 +1,5 @@
 import styles from './Tag.module.css'
-
-export interface TagProps {
-  label: string
-  color?: string
-  onRemove: () => void
-}
+import type { TagProps } from './Tag.types'
 
 export function Tag({ label, color, onRemove }: TagProps) {
   return (

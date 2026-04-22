@@ -1,16 +1,7 @@
-import { IssueRow } from './IssueRow'
+import { IssueRow } from '../IssueRow/IssueRow'
 import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
-import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
 import styles from './IssueList.module.css'
-
-export interface IssueListProps {
-  issues: RawIssue[]
-  states: PlaneState[]
-  labels: PlaneLabel[]
-  members: PlaneMember[]
-  getIssueUrl?: (issue: RawIssue) => string
-  onSelectIssue: (issue: RawIssue) => void
-}
+import type { IssueListProps } from './IssueList.types'
 
 export function IssueList({ issues, states, labels, members, getIssueUrl, onSelectIssue }: IssueListProps) {
   if (issues.length === 0) {

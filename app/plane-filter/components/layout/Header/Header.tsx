@@ -1,17 +1,8 @@
 'use client'
 
-import { Spinner } from '../ui/Spinner'
-import type { RawIssue } from '@/lib/types'
+import { Spinner } from '../../ui/Spinner/Spinner'
 import styles from './Header.module.css'
-
-interface HeaderProps {
-  filtered: RawIssue[] | null
-  totalCount: number
-  selectedProject: string
-  syncing: boolean
-  loadingProject: boolean
-  onSync: () => void
-}
+import type { HeaderProps } from './Header.types'
 
 export function Header({ filtered, totalCount, selectedProject, syncing, loadingProject, onSync }: HeaderProps) {
   return (

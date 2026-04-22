@@ -1,20 +1,12 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Avatar } from '../ui/Avatar'
+import { Avatar } from '../../ui/Avatar/Avatar'
 import { PRIORITY_CONFIG } from '@/lib/constants'
 import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
 import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
 import styles from './BoardView.module.css'
-
-interface BoardViewProps {
-  issues: RawIssue[]
-  states: PlaneState[]
-  labels: PlaneLabel[]
-  members: PlaneMember[]
-  getIssueUrl?: (issue: RawIssue) => string
-  onSelectIssue: (issue: RawIssue) => void
-}
+import type { BoardViewProps, BoardCardProps } from './BoardView.types'
 
 export function BoardView({ issues, states, labels, members, getIssueUrl, onSelectIssue }: BoardViewProps) {
   const boardRef = useRef<HTMLDivElement>(null)
@@ -144,16 +136,6 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
   )
 }
 
-interface BoardCardProps {
-  issue: RawIssue
-  states: PlaneState[]
-  labels: PlaneLabel[]
-  members: PlaneMember[]
-  issueUrl?: string
-  isNew?: boolean
-  isUpdated?: boolean
-  onClick: () => void
-}
 
 function BoardCard({ issue, labels, members, issueUrl, isNew, isUpdated, onClick }: BoardCardProps) {
   const [copied, setCopied] = useState(false)

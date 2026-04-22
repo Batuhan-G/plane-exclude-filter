@@ -1,19 +1,9 @@
 import { useState } from 'react'
-import { Avatar } from '../ui/Avatar'
+import { Avatar } from '../../ui/Avatar/Avatar'
 import { PRIORITY_CONFIG } from '@/lib/constants'
 import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
 import styles from './IssueRow.module.css'
-
-export interface IssueRowProps {
-  issue: RawIssue
-  states: PlaneState[]
-  labels: PlaneLabel[]
-  members: PlaneMember[]
-  issueUrl?: string
-  isNew?: boolean
-  isUpdated?: boolean
-  onClick: () => void
-}
+import type { IssueRowProps } from './IssueRow.types'
 
 export function IssueRow({ issue, states, labels, members, issueUrl, isNew, isUpdated, onClick }: IssueRowProps) {
   const [copied, setCopied] = useState(false)

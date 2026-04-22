@@ -1,12 +1,5 @@
-import type { ActivityFilter } from '@/lib/types'
 import styles from './ActivityFilterPanel.module.css'
-
-export interface ActivityFilterPanelProps {
-  filter: ActivityFilter
-  newCount: number
-  updatedCount: number
-  onChange: (filter: ActivityFilter) => void
-}
+import type { ActivityFilterPanelProps } from './ActivityFilterPanel.types'
 
 export function ActivityFilterPanel({ filter, newCount, updatedCount, onChange }: ActivityFilterPanelProps) {
   const disabled = !filter.enabled
