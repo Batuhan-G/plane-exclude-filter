@@ -61,7 +61,7 @@ export interface ActivityFilter {
 export const DEFAULT_ACTIVITY_FILTER: ActivityFilter = {
   showNewOnly: false,
   showUpdatedOnly: false,
-  enabled: true,
+  enabled: false,
 }
 
 export interface PlaneAttachment {

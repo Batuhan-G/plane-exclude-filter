@@ -1,49 +1,15 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Avatar } from '../../ui/Avatar/Avatar'
 import { PRIORITY_CONFIG } from '@/lib/constants'
 import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
-import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
+import { useDragScroll } from '@/hooks/useDragScroll'
 import styles from './BoardView.module.css'
 import type { BoardViewProps, BoardCardProps } from './BoardView.types'
 
 export function BoardView({ issues, states, labels, members, getIssueUrl, onSelectIssue }: BoardViewProps) {
-  const boardRef = useRef<HTMLDivElement>(null)
-  const isDragging = useRef(false)
-  const hasDragged = useRef(false)
-  const startX = useRef(0)
-  const scrollLeft = useRef(0)
-
-  function onMouseDown(e: React.MouseEvent) {
-    if ((e.target as HTMLElement).closest('button')) return
-    isDragging.current = true
-    hasDragged.current = false
-    startX.current = e.pageX - (boardRef.current?.offsetLeft ?? 0)
-    scrollLeft.current = boardRef.current?.scrollLeft ?? 0
-    boardRef.current!.style.cursor = 'grabbing'
-  }
-
-  function onMouseMove(e: React.MouseEvent) {
-    if (!isDragging.current || !boardRef.current) return
-    e.preventDefault()
-    const x = e.pageX - boardRef.current.offsetLeft
-    const diff = x - startX.current
-    if (Math.abs(diff) > 4) hasDragged.current = true
-    boardRef.current.scrollLeft = scrollLeft.current - diff
-  }
-
-  function onMouseUp() {
-    isDragging.current = false
-    if (boardRef.current) boardRef.current.style.cursor = 'grab'
-  }
-
-  function onClickCapture(e: React.MouseEvent) {
-    if (hasDragged.current) {
-      e.stopPropagation()
-      hasDragged.current = false
-    }
-  }
+  const { ref: boardRef, handlers } = useDragScroll()
 
   if (issues.length === 0) {
     return (
@@ -54,27 +20,14 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
     )
   }
 
-  // Group issues by state, preserving state order from states array
   const statesWithIssues = states
-    .map(state => ({
-      state,
-      issues: issues.filter(i => i.state === state.id),
-    }))
+    .map(state => ({ state, issues: issues.filter(i => i.state === state.id) }))
     .filter(col => col.issues.length > 0)
 
-  // Issues with unknown/missing state
   const unknownIssues = issues.filter(i => !states.find(s => s.id === i.state))
 
   return (
-    <div
-      ref={boardRef}
-      className={styles.board}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
-      onClickCapture={onClickCapture}
-    >
+    <div ref={boardRef} className={styles.board} {...handlers}>
       {statesWithIssues.map(({ state, issues: colIssues }) => (
         <div key={state.id} className={styles.column}>
           <div className={styles.columnHeader}>
@@ -83,23 +36,19 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
             <span className={styles.columnCount}>{colIssues.length}</span>
           </div>
           <div className={styles.cards}>
-            {colIssues.map(issue => {
-              const isNew = isNewIssue(issue.created_at)
-              const isUpdated = isUpdatedIssue(issue.created_at, issue.updated_at)
-              return (
-                <BoardCard
-                  key={issue.id}
-                  issue={issue}
-                  states={states}
-                  labels={labels}
-                  members={members}
-                  issueUrl={getIssueUrl?.(issue)}
-                  isNew={isNew}
-                  isUpdated={isUpdated}
-                  onClick={() => onSelectIssue(issue)}
-                />
-              )
-            })}
+            {colIssues.map(issue => (
+              <BoardCard
+                key={issue.id}
+                issue={issue}
+                states={states}
+                labels={labels}
+                members={members}
+                issueUrl={getIssueUrl?.(issue)}
+                isNew={isNewIssue(issue.created_at)}
+                isUpdated={isUpdatedIssue(issue.created_at, issue.updated_at)}
+                onClick={() => onSelectIssue(issue)}
+              />
+            ))}
           </div>
         </div>
       ))}
@@ -112,23 +61,19 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
             <span className={styles.columnCount}>{unknownIssues.length}</span>
           </div>
           <div className={styles.cards}>
-            {unknownIssues.map(issue => {
-              const isNew = isNewIssue(issue.created_at)
-              const isUpdated = isUpdatedIssue(issue.created_at, issue.updated_at)
-              return (
-                <BoardCard
-                  key={issue.id}
-                  issue={issue}
-                  states={states}
-                  labels={labels}
-                  members={members}
-                  issueUrl={getIssueUrl?.(issue)}
-                  isNew={isNew}
-                  isUpdated={isUpdated}
-                  onClick={() => onSelectIssue(issue)}
-                />
-              )
-            })}
+            {unknownIssues.map(issue => (
+              <BoardCard
+                key={issue.id}
+                issue={issue}
+                states={states}
+                labels={labels}
+                members={members}
+                issueUrl={getIssueUrl?.(issue)}
+                isNew={isNewIssue(issue.created_at)}
+                isUpdated={isUpdatedIssue(issue.created_at, issue.updated_at)}
+                onClick={() => onSelectIssue(issue)}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -136,10 +81,10 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
   )
 }
 
-
 function BoardCard({ issue, labels, members, issueUrl, isNew, isUpdated, onClick }: BoardCardProps) {
   const [copied, setCopied] = useState(false)
   const p = PRIORITY_CONFIG[issue.priority] ?? PRIORITY_CONFIG.none
+  const activityColor = isNew ? '#22c55e' : isUpdated ? '#3b82f6' : undefined
 
   function handleCopyLink(e: React.MouseEvent) {
     e.stopPropagation()
@@ -150,8 +95,6 @@ function BoardCard({ issue, labels, members, issueUrl, isNew, isUpdated, onClick
     })
   }
 
-  const activityColor = isNew ? '#22c55e' : isUpdated ? '#3b82f6' : undefined
-
   return (
     <div
       className={`${styles.card} ${activityColor ? styles.activityBorder : ''}`}
@@ -161,10 +104,7 @@ function BoardCard({ issue, labels, members, issueUrl, isNew, isUpdated, onClick
       <div className={styles.cardTop}>
         <div className={styles.cardTopLeft}>
           <span className={styles.cardId}>#{issue.sequence_id}</span>
-          <span
-            className={styles.priorityBadge}
-            style={{ borderColor: p.color + '55', color: p.color }}
-          >
+          <span className={styles.priorityBadge} style={{ borderColor: p.color + '55', color: p.color }}>
             {p.label}
           </span>
         </div>
@@ -188,7 +128,6 @@ function BoardCard({ issue, labels, members, issueUrl, isNew, isUpdated, onClick
             if (!mObj) return null
             return <Avatar key={aid} name={mObj.name} size={20} />
           })}
-         
         </div>
       </div>
       <div className={styles.cardTitle}>{issue.name}</div>

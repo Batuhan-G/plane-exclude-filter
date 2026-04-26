@@ -8,6 +8,7 @@ export interface UseIssuesReturn {
   error: string
   fetchIssues: (projectId: string, bust?: boolean) => Promise<void>
   sync: (projectId: string) => Promise<void>
+  updateIssue: (updated: RawIssue) => void
   reset: () => void
 }
 
@@ -32,9 +33,13 @@ export function useIssues(): UseIssuesReturn {
     setSyncing(false)
   }
 
+  function updateIssue(updated: RawIssue): void {
+    setAllIssues(prev => prev.map(i => i.id === updated.id ? updated : i))
+  }
+
   function reset(): void {
     setAllIssues([])
   }
 
-  return { allIssues, syncing, error, fetchIssues, sync, reset }
+  return { allIssues, syncing, error, fetchIssues, sync, updateIssue, reset }
 }

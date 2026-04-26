@@ -53,6 +53,11 @@ export default function PlaneFilterPage() {
     await issues.sync(selectedProject)
   }
 
+  function handleIssueUpdate(updated: RawIssue) {
+    issues.updateIssue(updated)
+    setSelectedIssue(updated)
+  }
+
   return (
     <div className={styles.page}>
       <ScrollToTop />
@@ -62,6 +67,7 @@ export default function PlaneFilterPage() {
         labels={planeData.labels}
         members={planeData.members}
         onClose={() => setSelectedIssue(null)}
+        onIssueUpdate={handleIssueUpdate}
       />
 
       <Header

@@ -83,5 +83,4 @@ export function FilterPanel({ variant, members, labels, states, filter, onChange
   )
 }
 
-// Re-export for convenience
 export { EMPTY_FILTER }

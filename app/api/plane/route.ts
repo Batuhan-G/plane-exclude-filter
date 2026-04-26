@@ -6,6 +6,21 @@ const API_KEY = process.env.PLANE_API_KEY!
 const WORKSPACE = process.env.PLANE_WORKSPACE_SLUG!
 
 
+async function planePatch(path: string, body: unknown) {
+  const url = `${PLANE_API}${path}`
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Plane API ${res.status}: ${text}`)
+  }
+  return res.json()
+}
+
 async function planeGet(urlOrPath: string, noCache = false) {
   const url = urlOrPath.startsWith('http') ? urlOrPath : `${PLANE_API}${urlOrPath}`
   const res = await fetch(url, {
@@ -96,7 +111,6 @@ export async function GET(req: NextRequest) {
       const filename = searchParams.get('name')
       if (!url) return NextResponse.json({ error: 'Missing url' }, { status: 400 })
 
-      // Encode each path segment so spaces/special chars don't break the URL
       const encodedPath = url.startsWith('http')
         ? url
         : url.split('/').map(encodeURIComponent).join('/')
@@ -119,7 +133,6 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Got HTML — check PLANE_BASE_URL or asset path', resolvedUrl }, { status: 502 })
       }
 
-      // Plane may return a JSON envelope with a presigned URL instead of raw binary
       if (contentType.includes('application/json')) {
         const json = await upstream.json() as Record<string, unknown>
         const presignedUrl = (json.url ?? json.signed_url ?? json.asset_url) as string | undefined
@@ -150,6 +163,29 @@ export async function GET(req: NextRequest) {
         headers['Content-Disposition'] = `attachment; filename="${filename}"`
       }
       return new NextResponse(upstream.body, { headers })
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  const { searchParams } = req.nextUrl
+  const action = searchParams.get('action')
+  const projectId = searchParams.get('project')
+  const issueId = searchParams.get('issue')
+
+  try {
+    if (action === 'updateIssue' && projectId && issueId) {
+      const body = await req.json()
+      const res = await planePatch(
+        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/`,
+        body
+      )
+      return NextResponse.json(res)
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })

@@ -9,12 +9,12 @@ export function ActivityFilterPanel({ filter, newCount, updatedCount, onChange }
       <div className={styles.panelHeader}>
         <span className={styles.panelTitle}>
           <span className={styles.panelTitleDot} />
-          AKTİVİTE
+          ACTIVITY
         </span>
         <button
           className={`${styles.toggle} ${filter.enabled ? styles.toggleOn : styles.toggleOff}`}
           onClick={() => onChange({ ...filter, enabled: !filter.enabled })}
-          aria-label={filter.enabled ? 'Devre dışı bırak' : 'Etkinleştir'}
+          aria-label={filter.enabled ? 'Disable' : 'Enable'}
         >
           <span className={styles.toggleKnob} />
         </button>
@@ -29,7 +29,7 @@ export function ActivityFilterPanel({ filter, newCount, updatedCount, onChange }
             disabled={disabled}
             onChange={e => onChange({ ...filter, showNewOnly: e.target.checked })}
           />
-          <span>Son 24 saat — Yeni ({newCount})</span>
+          <span>Last 24h — New ({newCount})</span>
         </label>
         <label className={styles.checkboxLabel}>
           <input
@@ -39,7 +39,7 @@ export function ActivityFilterPanel({ filter, newCount, updatedCount, onChange }
             disabled={disabled}
             onChange={e => onChange({ ...filter, showUpdatedOnly: e.target.checked })}
           />
-          <span>Son 24 saat — Güncellendi ({updatedCount})</span>
+          <span>Last 24h — Updated ({updatedCount})</span>
         </label>
       </div>
     </div>

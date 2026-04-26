@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Tag } from '../../ui/Tag/Tag'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import styles from './FilterInput.module.css'
 import type { FilterInputProps } from './FilterInput.types'
 
@@ -18,17 +19,11 @@ export function FilterInput<T extends { id: string; name: string; color?: string
   const inputRef = useRef<HTMLInputElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
+  useClickOutside(wrapRef, () => setOpen(false))
+
   const filteredItems = items.filter(
     i => i.name.toLowerCase().includes(query.toLowerCase()) && !selected.find(s => s.id === i.id),
   )
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
 
   return (
     <div className={styles.filterRow}>

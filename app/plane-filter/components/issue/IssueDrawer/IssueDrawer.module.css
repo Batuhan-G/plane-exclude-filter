@@ -70,6 +70,186 @@
   margin: 0;
 }
 
+.titleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.titleClickable {
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: background 0.12s;
+  padding: 4px 6px;
+  margin: -4px -6px;
+}
+
+.titleClickable:hover {
+  background: var(--bg4);
+}
+
+.titleEditor {
+  outline: none;
+  cursor: text;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 1.4em;
+}
+
+.titleActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Editable properties section */
+.editableSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 0;
+}
+
+.editableRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 32px;
+}
+
+.editableLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: var(--text3);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  width: 72px;
+  padding-top: 7px;
+}
+
+.editableFieldWrap {
+  position: relative;
+  flex: 1;
+}
+
+.editableValue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  color: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+
+
+.fieldSpinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg) }
+}
+
+.fieldSaving {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.fieldDropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 180px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 10;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border-radius: calc(var(--radius) - 1px);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text2);
+  text-align: left;
+  width: 100%;
+  transition: background 0.1s, color 0.1s;
+}
+
+.dropdownItem:hover {
+  background: var(--bg4);
+  color: var(--text);
+}
+
+.dropdownItemActive {
+  background: var(--bg3);
+  color: var(--text);
+}
+
+.checkmark {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.assigneeValueDisplay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.labelsWrap {
+  position: relative;
+}
+
+.assigneeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.unassigned {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+}
+
+.fieldError {
+  font-size: 11px;
+  color: #ff4d4d;
+  padding: 2px 6px;
+}
+
 .drawerMeta {
   display: flex;
   flex-wrap: wrap;
@@ -139,12 +319,79 @@
   gap: 8px;
 }
 
+
+.descHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.descActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.descEditor {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text2);
+  outline: none;
+  word-break: break-word;
+  min-height: 80px;
+}
+
+.btnSave {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--accent);
+  color: #000;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btnSave:hover:not(:disabled) {
+  background: var(--accent2);
+}
+
+.btnSave:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.btnCancel {
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--text3);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.btnCancel:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btnCancel:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .drawerDescription {
   font-size: 14px;
   line-height: 1.65;
   color: var(--text2);
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
 }
 
 /* override inline styles from Plane's rich-text HTML */
@@ -209,8 +456,18 @@
   font-size: 13px;
   color: var(--text3);
   font-style: italic;
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
+}
+
+.descClickable {
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: background 0.12s;
+  padding: 8px 10px;
+  margin: -8px -10px;
+}
+
+.descClickable:hover {
+  background: var(--bg4);
 }
 
 /* Attachments */

@@ -1,8 +1,6 @@
 import type { ActivityFilter, RawIssue, FilterSet, PlaneMember, PlaneLabel, PlaneState, PlaneProject } from '@/lib/types'
 
 export type ViewMode = 'list' | 'board'
-export type SortField = 'created' | 'priority'
-export type SortDir = 'asc' | 'desc'
 
 export interface MainContentProps {
   error: string | null | undefined

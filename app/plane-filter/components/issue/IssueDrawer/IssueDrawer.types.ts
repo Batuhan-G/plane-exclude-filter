@@ -6,4 +6,5 @@ export interface IssueDrawerProps {
   labels: PlaneLabel[]
   members: PlaneMember[]
   onClose: () => void
+  onIssueUpdate: (updated: RawIssue) => void
 }

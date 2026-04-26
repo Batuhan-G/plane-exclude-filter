@@ -1,17 +1,26 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { FilterPanel } from '../../filter/FilterPanel/FilterPanel'
 import { ActivityFilterPanel } from '../../filter/ActivityFilterPanel/ActivityFilterPanel'
 import { IssueList } from '../../issue/IssueList/IssueList'
 import { BoardView } from '../../issue/BoardView/BoardView'
 import { Spinner } from '../../ui/Spinner/Spinner'
-import type { Priority } from '@/lib/types'
+import { useIssueSort } from '@/hooks/useIssueSort'
+import type { SortField } from '@/hooks/useIssueSort'
 import styles from './MainContent.module.css'
-import type { MainContentProps, ViewMode, SortField, SortDir } from './MainContent.types'
+import type { MainContentProps, ViewMode } from './MainContent.types'
 
-const PRIORITY_ORDER: Record<Priority, number> = {
-  urgent: 0, high: 1, medium: 2, low: 3, none: 4,
+function DirArrow({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: 'asc' | 'desc' }) {
+  if (sortField !== field) return null
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      {sortDir === 'desc'
+        ? <><line x1="5" y1="1" x2="5" y2="9" /><polyline points="2,6 5,9 8,6" /></>
+        : <><line x1="5" y1="9" x2="5" y2="1" /><polyline points="2,4 5,1 8,4" /></>
+      }
+    </svg>
+  )
 }
 
 export function MainContent({
@@ -36,45 +45,8 @@ export function MainContent({
   getIssueUrl,
   onSelectIssue,
 }: MainContentProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [sortField, setSortField] = useState<SortField>('created')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-
-  function handleSortField(field: SortField) {
-    if (sortField === field) {
-      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDir('desc')
-    }
-  }
-
-  const sorted = useMemo(() => {
-    if (!filtered) return null
-    return [...filtered].sort((a, b) => {
-      if (sortField === 'created') {
-        const ta = a.created_at ? new Date(a.created_at).getTime() : 0
-        const tb = b.created_at ? new Date(b.created_at).getTime() : 0
-        return sortDir === 'desc' ? tb - ta : ta - tb
-      } else {
-        const pa = PRIORITY_ORDER[a.priority] ?? 4
-        const pb = PRIORITY_ORDER[b.priority] ?? 4
-        return sortDir === 'asc' ? pa - pb : pb - pa
-      }
-    })
-  }, [filtered, sortField, sortDir])
-
-  const DirArrow = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null
-    return (
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        {sortDir === 'desc'
-          ? <><line x1="5" y1="1" x2="5" y2="9" /><polyline points="2,6 5,9 8,6" /></>
-          : <><line x1="5" y1="9" x2="5" y2="1" /><polyline points="2,4 5,1 8,4" /></>
-        }
-      </svg>
-    )
-  }
+  const [viewMode, setViewMode] = useState<ViewMode>('board')
+  const { sorted, sortField, sortDir, handleSortField } = useIssueSort(filtered)
 
   return (
     <div className={styles.wrapper}>
@@ -135,24 +107,22 @@ export function MainContent({
         {sorted !== null && (
           <>
             <div className={styles.toolbar}>
-              {/* Sort controls */}
               <div className={styles.sortControls}>
                 <span className={styles.sortLabel}>Sort</span>
                 <button
                   className={`${styles.sortBtn} ${sortField === 'created' ? styles.sortBtnActive : ''}`}
                   onClick={() => handleSortField('created')}
                 >
-                  Created <DirArrow field="created" />
+                  Created <DirArrow field="created" sortField={sortField} sortDir={sortDir} />
                 </button>
                 <button
                   className={`${styles.sortBtn} ${sortField === 'priority' ? styles.sortBtnActive : ''}`}
                   onClick={() => handleSortField('priority')}
                 >
-                  Priority <DirArrow field="priority" />
+                  Priority <DirArrow field="priority" sortField={sortField} sortDir={sortDir} />
                 </button>
               </div>
 
-              {/* View switch */}
               <div className={styles.viewSwitch}>
                 <button
                   className={`${styles.viewBtn} ${viewMode === 'list' ? styles.viewBtnActive : ''}`}
