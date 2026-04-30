@@ -1,10 +1,11 @@
 .wrapper {
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 24px 20px 80px;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 24px 20px 0;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  overflow: hidden;
   gap: 16px;
 }
 
@@ -15,17 +16,26 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  position: sticky;
-  top: 68px; /* below header */
+  overflow-y: auto;
+  padding-bottom: 24px;
+  scrollbar-width: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 /* ─── Right content area ───────────────────────────────── */
 .content {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  overflow-y: auto;
+  padding-bottom: 24px;
+  scrollbar-width: none;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
 }
 
 /* ─── Toolbar (view switcher row) ─────────────────────── */
@@ -34,6 +44,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 10px;
 }
 
 /* ─── Sort controls ────────────────────────────────────── */
