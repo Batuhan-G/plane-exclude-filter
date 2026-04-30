@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { Avatar } from '../../ui/Avatar/Avatar'
+import { IssueTimeline } from '../IssueTimeline'
 import { PRIORITY_CONFIG, PRIORITY_ITEMS } from '@/lib/constants'
 import { useIssueEditor } from '@/hooks/useIssueEditor'
 import { useIssueAttachments } from '@/hooks/useIssueAttachments'
@@ -196,6 +197,22 @@ export function IssueDrawer({ issue, states, labels, members, onClose, onIssueUp
               )}
             </div>
           </div>
+          {localIssue.created_by && (() => {
+            const creator = members.find(m => m.id === localIssue.created_by)
+            return creator ? (
+              <div className={styles.editableRow}>
+                <span className={styles.editableLabel}>CREATED BY</span>
+                <div className={styles.editableFieldWrap}>
+                  <span className={styles.editableValue} style={{ cursor: 'default' }}>
+                    <span className={styles.assigneeChip}>
+                      <Avatar name={creator.name} size={18} />
+                      <span>{creator.name}</span>
+                    </span>
+                  </span>
+                </div>
+              </div>
+            ) : null
+          })()}
 
           {fieldError && <span className={styles.fieldError}>{fieldError}</span>}
         </div>
@@ -289,6 +306,8 @@ export function IssueDrawer({ issue, states, labels, members, onClose, onIssueUp
             </div>
           )}
         </div>
+
+        <IssueTimeline issue={localIssue} members={members} />
 
         {(loadingAttachments || attachments.length > 0) && (
           <div className={styles.drawerAttachSection}>

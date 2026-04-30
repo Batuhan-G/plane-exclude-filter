@@ -12,7 +12,8 @@ const PANEL_LABELS: Record<PanelVariant, string> = {
 
 export function FilterPanel({ variant, members, labels, states, filter, onChange, onClear }: FilterPanelProps) {
   const hasFilters =
-    filter.assignees.length > 0 || filter.labels.length > 0 || filter.states.length > 0 || filter.priorities.length > 0
+    filter.assignees.length > 0 || filter.labels.length > 0 || filter.states.length > 0 ||
+    filter.priorities.length > 0 || (filter.createdBy ?? []).length > 0
 
   const memberRenderer = (item: PlaneMember) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -78,6 +79,14 @@ export function FilterPanel({ variant, members, labels, states, filter, onChange
         onAdd={item => onChange(prev => ({ ...prev, priorities: [...prev.priorities, item] }))}
         onRemove={id => onChange(prev => ({ ...prev, priorities: prev.priorities.filter(p => p.id !== id) }))}
         renderItem={priorityRenderer}
+      />
+      <FilterInput
+        label="Created By"
+        items={members}
+        selected={filter.createdBy ?? []}
+        onAdd={item => onChange(prev => ({ ...prev, createdBy: [...(prev.createdBy ?? []), item] }))}
+        onRemove={id => onChange(prev => ({ ...prev, createdBy: (prev.createdBy ?? []).filter(m => m.id !== id) }))}
+        renderItem={memberRenderer}
       />
     </div>
   )

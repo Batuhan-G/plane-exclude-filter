@@ -12,6 +12,7 @@ export interface RawIssue {
   description_html?: string
   created_at?: string
   updated_at?: string
+  created_by?: string
 }
 
 export interface PlanePriority {
@@ -25,6 +26,7 @@ export interface FilterSet {
   labels: PlaneLabel[]
   states: PlaneState[]
   priorities: PlanePriority[]
+  createdBy: PlaneMember[]
 }
 
 export interface PlaneProject {
@@ -73,3 +75,26 @@ export interface PlaneAttachment {
     type: string
   }
 }
+
+export interface PlaneComment {
+  id: string
+  comment_html: string
+  actor: string
+  actor_detail: { id: string; display_name: string; avatar?: string }
+  created_at: string
+}
+
+export interface PlaneActivity {
+  id: string
+  actor: string
+  actor_detail?: { id?: string; display_name?: string; avatar?: string } | null
+  created_at: string
+  field: string | null
+  old_value: string | null
+  new_value: string | null
+  verb: string
+}
+
+export type TimelineEntry =
+  | { type: 'activity'; data: PlaneActivity }
+  | { type: 'comment'; data: PlaneComment }

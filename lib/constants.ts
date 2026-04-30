@@ -12,4 +12,4 @@ export const PRIORITY_ITEMS: PlanePriority[] = (
   ['urgent', 'high', 'medium', 'low', 'none'] as Priority[]
 ).map(p => ({ id: p, name: PRIORITY_CONFIG[p].label, color: PRIORITY_CONFIG[p].color }))
 
-export const EMPTY_FILTER: FilterSet = { assignees: [], labels: [], states: [], priorities: [] }
+export const EMPTY_FILTER: FilterSet = { assignees: [], labels: [], states: [], priorities: [], createdBy: [] }

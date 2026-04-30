@@ -106,6 +106,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(data.results ?? data)
     }
 
+    if (action === 'me') {
+      const data = await planeGet(`/users/me/`)
+      return NextResponse.json({ id: data.id, display_name: data.display_name, avatar: data.avatar ?? '' })
+    }
+
+    if (action === 'comments' && projectId && issueId) {
+      const data = await planeGet(
+        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/comments/`,
+        true
+      )
+      return NextResponse.json(data.results ?? data)
+    }
+
+    if (action === 'activities' && projectId && issueId) {
+      const data = await planeGet(
+        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/activities/`,
+        true
+      )
+      return NextResponse.json(data.results ?? data)
+    }
+
     if (action === 'asset') {
       const url = searchParams.get('url')
       const filename = searchParams.get('name')
@@ -163,6 +184,65 @@ export async function GET(req: NextRequest) {
         headers['Content-Disposition'] = `attachment; filename="${filename}"`
       }
       return new NextResponse(upstream.body, { headers })
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const { searchParams } = req.nextUrl
+  const action = searchParams.get('action')
+  const projectId = searchParams.get('project')
+  const issueId = searchParams.get('issue')
+
+  try {
+    if (action === 'addComment' && projectId && issueId) {
+      const body = await req.json()
+      const url = `${PLANE_API}/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/comments/`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        cache: 'no-store',
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Plane API ${res.status}: ${text}`)
+      }
+      return NextResponse.json(await res.json())
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = req.nextUrl
+  const action    = searchParams.get('action')
+  const projectId = searchParams.get('project')
+  const issueId   = searchParams.get('issue')
+  const commentId = searchParams.get('comment')
+
+  try {
+    if (action === 'deleteComment' && projectId && issueId && commentId) {
+      const url = `${PLANE_API}/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/comments/${commentId}/`
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY },
+        cache: 'no-store',
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Plane API ${res.status}: ${text}`)
+      }
+      return new NextResponse(null, { status: 204 })
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })

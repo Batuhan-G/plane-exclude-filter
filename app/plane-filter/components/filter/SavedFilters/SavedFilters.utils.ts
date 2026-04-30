@@ -8,10 +8,11 @@ export const MAX_FILTERS = 10
 
 export function isFilterEmpty(f: FilterSet): boolean {
   return (
-    f.assignees.length  === 0 &&
-    f.labels.length     === 0 &&
-    f.states.length     === 0 &&
-    f.priorities.length === 0
+    f.assignees.length        === 0 &&
+    f.labels.length           === 0 &&
+    f.states.length           === 0 &&
+    f.priorities.length       === 0 &&
+    (f.createdBy ?? []).length === 0
   )
 }
 
@@ -22,10 +23,11 @@ export function hasActiveFilter(include: FilterSet, exclude: FilterSet): boolean
 export function filterSetsEqual(a: FilterSet, b: FilterSet): boolean {
   const toSortedIds = (arr: { id: string }[]) => arr.map(x => x.id).sort().join(',')
   return (
-    toSortedIds(a.assignees)  === toSortedIds(b.assignees)  &&
-    toSortedIds(a.labels)     === toSortedIds(b.labels)     &&
-    toSortedIds(a.states)     === toSortedIds(b.states)     &&
-    toSortedIds(a.priorities) === toSortedIds(b.priorities)
+    toSortedIds(a.assignees)        === toSortedIds(b.assignees)        &&
+    toSortedIds(a.labels)           === toSortedIds(b.labels)           &&
+    toSortedIds(a.states)           === toSortedIds(b.states)           &&
+    toSortedIds(a.priorities)       === toSortedIds(b.priorities)       &&
+    toSortedIds(a.createdBy ?? [])  === toSortedIds(b.createdBy ?? [])
   )
 }
 

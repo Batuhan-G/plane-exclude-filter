@@ -8,10 +8,12 @@ const K = {
   incL:       'inc_l',
   incS:       'inc_s',
   incP:       'inc_p',
+  incCB:      'inc_cb',
   excA:       'exc_a',
   excL:       'exc_l',
   excS:       'exc_s',
   excP:       'exc_p',
+  excCB:      'exc_cb',
   activity:   'act',
   search:     'q',
   searchField: 'qf',
@@ -42,14 +44,16 @@ export function buildUrlParams(
     if (items.length > 0) p.set(key, toIds(items))
   }
 
-  set(K.incA, include.assignees)
-  set(K.incL, include.labels)
-  set(K.incS, include.states)
-  set(K.incP, include.priorities)
-  set(K.excA, exclude.assignees)
-  set(K.excL, exclude.labels)
-  set(K.excS, exclude.states)
-  set(K.excP, exclude.priorities)
+  set(K.incA,  include.assignees)
+  set(K.incL,  include.labels)
+  set(K.incS,  include.states)
+  set(K.incP,  include.priorities)
+  set(K.incCB, include.createdBy ?? [])
+  set(K.excA,  exclude.assignees)
+  set(K.excL,  exclude.labels)
+  set(K.excS,  exclude.states)
+  set(K.excP,  exclude.priorities)
+  set(K.excCB, exclude.createdBy ?? [])
 
   if (activityFilter.enabled) {
     p.set(K.activity, activityFilter.showNewOnly ? 'new' : 'updated')
@@ -93,23 +97,24 @@ export function readFiltersFromParams(
   const findState    = (id: string) => states.find(s => s.id === id)
   const findPriority = (id: string) => PRIORITY_ITEMS.find(p => p.id === id)
 
-  function resolveSet(aKey: string, lKey: string, sKey: string, pKey: string): FilterSet {
+  function resolveSet(aKey: string, lKey: string, sKey: string, pKey: string, cbKey: string): FilterSet {
     return {
       assignees:  splitIds(params.get(aKey)).map(findMember).filter(Boolean)   as PlaneMember[],
       labels:     splitIds(params.get(lKey)).map(findLabel).filter(Boolean)    as PlaneLabel[],
       states:     splitIds(params.get(sKey)).map(findState).filter(Boolean)    as PlaneState[],
       priorities: splitIds(params.get(pKey)).map(findPriority).filter(Boolean) as PlanePriority[],
+      createdBy:  splitIds(params.get(cbKey)).map(findMember).filter(Boolean)  as PlaneMember[],
     }
   }
 
   return {
-    include: resolveSet(K.incA, K.incL, K.incS, K.incP),
-    exclude: resolveSet(K.excA, K.excL, K.excS, K.excP),
+    include: resolveSet(K.incA, K.incL, K.incS, K.incP, K.incCB),
+    exclude: resolveSet(K.excA, K.excL, K.excS, K.excP, K.excCB),
   }
 }
 
 export function hasFilterParams(params: URLSearchParams): boolean {
-  return [K.incA, K.incL, K.incS, K.incP, K.excA, K.excL, K.excS, K.excP, K.activity].some(
+  return [K.incA, K.incL, K.incS, K.incP, K.incCB, K.excA, K.excL, K.excS, K.excP, K.excCB, K.activity].some(
     k => !!params.get(k)
   )
 }
