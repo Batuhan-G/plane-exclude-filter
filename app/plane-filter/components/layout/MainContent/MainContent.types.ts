@@ -21,6 +21,7 @@ export interface MainContentProps {
   onExcludeChange: (filter: FilterSet) => void
   onActivityFilterChange: (filter: ActivityFilter) => void
   onFilterReset: () => void
+  searchQuery: string
   getIssueUrl: (issue: RawIssue) => string
   onSelectIssue: (issue: RawIssue) => void
 }

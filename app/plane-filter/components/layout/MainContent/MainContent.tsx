@@ -37,6 +37,7 @@ export function MainContent({
   activityFilter,
   newCount,
   updatedCount,
+  searchQuery,
   onProjectChange,
   onIncludeChange,
   onExcludeChange,
@@ -157,6 +158,7 @@ export function MainContent({
                 states={states}
                 labels={labels}
                 members={members}
+                searchQuery={searchQuery}
                 getIssueUrl={getIssueUrl}
                 onSelectIssue={onSelectIssue}
               />

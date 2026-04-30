@@ -59,3 +59,32 @@ export function applyFilter(
 
   return result
 }
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+export type SearchField = 'code' | 'title' | 'content'
+
+export function applySearch(issues: RawIssue[], query: string, field: SearchField = 'code'): RawIssue[] {
+  const q = query.trim()
+  if (!q) return issues
+
+  if (field === 'code') {
+    const numStr = q.replace(/^[a-z]+-/i, '').replace(/^#/, '')
+    const num = parseInt(numStr, 10)
+    if (isNaN(num)) return []
+    return issues.filter(issue => issue.sequence_id === num)
+  }
+
+  const lower = q.toLowerCase()
+
+  if (field === 'title') {
+    return issues.filter(issue => issue.name.toLowerCase().includes(lower))
+  }
+
+  return issues.filter(issue =>
+    issue.name.toLowerCase().includes(lower) ||
+    (issue.description_html ? stripHtml(issue.description_html).toLowerCase().includes(lower) : false)
+  )
+}

@@ -93,3 +93,136 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg2, #1a1a1a);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  height: 30px;
+  transition: border-color 0.15s;
+}
+
+.searchWrap:focus-within {
+  border-color: var(--accent);
+}
+
+.fieldSelector {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.fieldBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px 0 10px;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2, #aaa);
+  cursor: pointer;
+  white-space: nowrap;
+  border-radius: var(--radius) 0 0 var(--radius);
+  transition: color 0.15s;
+}
+
+.fieldBtn:hover {
+  color: var(--text);
+}
+
+.fieldDivider {
+  width: 1px;
+  height: 16px;
+  background: var(--border2, #333);
+  flex-shrink: 0;
+}
+
+.fieldDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  background: var(--bg2, #1a1a1a);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 100px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.fieldOption {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 10px;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text2, #aaa);
+  cursor: pointer;
+  border-radius: calc(var(--radius) - 2px);
+  transition: background 0.1s, color 0.1s;
+}
+
+.fieldOption:hover {
+  background: var(--bg3, #222);
+  color: var(--text);
+}
+
+.fieldOptionActive {
+  color: var(--accent);
+}
+
+.searchIcon {
+  position: relative;
+  margin-left: 8px;
+  color: var(--text3);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  height: 28px;
+  padding: 0 28px 0 6px;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  width: 200px;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--text3);
+}
+
+.searchClear {
+  position: absolute;
+  right: 7px;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.searchClear:hover {
+  color: var(--text);
+}

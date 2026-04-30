@@ -8,5 +8,6 @@ export interface IssueRowProps {
   issueUrl?: string
   isNew?: boolean
   isUpdated?: boolean
+  searchQuery?: string
   onClick: () => void
 }

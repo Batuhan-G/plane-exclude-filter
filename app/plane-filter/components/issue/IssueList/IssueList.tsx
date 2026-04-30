@@ -3,7 +3,7 @@ import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
 import styles from './IssueList.module.css'
 import type { IssueListProps } from './IssueList.types'
 
-export function IssueList({ issues, states, labels, members, getIssueUrl, onSelectIssue }: IssueListProps) {
+export function IssueList({ issues, states, labels, members, searchQuery, getIssueUrl, onSelectIssue }: IssueListProps) {
   if (issues.length === 0) {
     return (
       <div className={styles.results}>
@@ -31,6 +31,7 @@ export function IssueList({ issues, states, labels, members, getIssueUrl, onSele
               issueUrl={getIssueUrl?.(issue)}
               isNew={isNew}
               isUpdated={isUpdated}
+              searchQuery={searchQuery}
               onClick={() => onSelectIssue(issue)}
             />
           )

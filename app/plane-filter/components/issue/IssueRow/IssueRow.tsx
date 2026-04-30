@@ -5,7 +5,20 @@ import type { PlaneLabel, PlaneMember, PlaneState, RawIssue } from '@/lib/types'
 import styles from './IssueRow.module.css'
 import type { IssueRowProps } from './IssueRow.types'
 
-export function IssueRow({ issue, states, labels, members, issueUrl, isNew, isUpdated, onClick }: IssueRowProps) {
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text
+  const idx = text.toLowerCase().indexOf(query.toLowerCase())
+  if (idx === -1) return text
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark>{text.slice(idx, idx + query.length)}</mark>
+      {text.slice(idx + query.length)}
+    </>
+  )
+}
+
+export function IssueRow({ issue, states, labels, members, issueUrl, isNew, isUpdated, searchQuery = '', onClick }: IssueRowProps) {
   const [copied, setCopied] = useState(false)
   const p = PRIORITY_CONFIG[issue.priority] ?? PRIORITY_CONFIG.none
   const stateObj = states.find(s => s.id === issue.state)
@@ -37,7 +50,7 @@ export function IssueRow({ issue, states, labels, members, issueUrl, isNew, isUp
             {p.label}
           </span>
         </div>
-        <div className={styles.issueTitle}>{issue.name}</div>
+        <div className={styles.issueTitle}>{highlightText(issue.name, searchQuery)}</div>
         <div className={styles.issueMeta}>
           {stateObj && (
             <span

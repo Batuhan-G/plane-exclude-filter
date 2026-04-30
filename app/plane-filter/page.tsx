@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { usePlaneData } from '@/hooks/usePlaneData'
 import { useIssues } from '@/hooks/useIssues'
 import { useFilter } from '@/hooks/useFilter'
-import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
+import { isNewIssue, isUpdatedIssue, applySearch, type SearchField } from '@/lib/filterUtils'
 import { Header } from './components/layout/Header/Header'
 import { MainContent } from './components/layout/MainContent/MainContent'
 import { IssueDrawer } from './components/issue/IssueDrawer/IssueDrawer'
@@ -18,10 +18,22 @@ const PLANE_WORKSPACE = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG || ''
 export default function PlaneFilterPage() {
   const [selectedProject, setSelectedProject] = useState('')
   const [selectedIssue, setSelectedIssue] = useState<RawIssue | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchField, setSearchField] = useState<SearchField>('code')
 
   const planeData = usePlaneData()
   const issues = useIssues()
   const filter = useFilter(issues.allIssues)
+
+  const displayIssues = useMemo(
+    () => filter.filtered !== null ? applySearch(filter.filtered, searchQuery, searchField) : null,
+    [filter.filtered, searchQuery, searchField]
+  )
+
+  function handleSearchFieldChange(field: SearchField) {
+    setSearchField(field)
+    setSearchQuery('')
+  }
 
   const selectedProjectObj = planeData.projects.find(p => p.id === selectedProject)
 
@@ -71,11 +83,15 @@ export default function PlaneFilterPage() {
       />
 
       <Header
-        filtered={filter.filtered}
+        filtered={displayIssues}
         totalCount={issues.allIssues.length}
         selectedProject={selectedProject}
         syncing={issues.syncing}
         loadingProject={planeData.loadingProject}
+        searchQuery={searchQuery}
+        searchField={searchField}
+        onSearchChange={setSearchQuery}
+        onSearchFieldChange={handleSearchFieldChange}
         onSync={handleSync}
       />
 
@@ -87,7 +103,8 @@ export default function PlaneFilterPage() {
         members={planeData.members}
         loadingProject={planeData.loadingProject}
         selectedProject={selectedProject}
-        filtered={filter.filtered}
+        filtered={displayIssues}
+        searchQuery={searchQuery}
         include={filter.include}
         exclude={filter.exclude}
         activityFilter={filter.activityFilter}

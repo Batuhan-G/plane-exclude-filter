@@ -5,6 +5,7 @@ export interface IssueListProps {
   states: PlaneState[]
   labels: PlaneLabel[]
   members: PlaneMember[]
+  searchQuery?: string
   getIssueUrl?: (issue: RawIssue) => string
   onSelectIssue: (issue: RawIssue) => void
 }
