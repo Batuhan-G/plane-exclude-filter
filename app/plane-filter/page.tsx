@@ -17,7 +17,6 @@ import {
 import { Header } from './components/layout/Header/Header'
 import { MainContent } from './components/layout/MainContent/MainContent'
 import { IssueDrawer } from './components/issue/IssueDrawer/IssueDrawer'
-import { ScrollToTop } from './components/ui/ScrollToTop/ScrollToTop'
 import type { RawIssue } from '@/lib/types'
 import styles from './page.module.css'
 
@@ -142,7 +141,6 @@ function PlaneFilterPageContent() {
 
   return (
     <div className={styles.page}>
-      <ScrollToTop />
       <IssueDrawer
         issue={selectedIssue}
         states={planeData.states}

@@ -1,21 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type RefObject } from 'react'
 import styles from './ScrollToTop.module.css'
 
-export function ScrollToTop() {
+interface ScrollToTopProps {
+  containerRef: RefObject<HTMLDivElement>
+}
+
+export function ScrollToTop({ containerRef }: ScrollToTopProps) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
     function onScroll() {
-      setVisible(window.scrollY > 300)
+      setVisible(el!.scrollTop > 300)
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [containerRef])
 
   function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   if (!visible) return null

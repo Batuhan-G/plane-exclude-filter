@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { FilterPanel } from '../../filter/FilterPanel/FilterPanel'
 import { ActivityFilterPanel } from '../../filter/ActivityFilterPanel/ActivityFilterPanel'
+import { SavedFilters } from '../../filter/SavedFilters/SavedFilters'
 import { IssueList } from '../../issue/IssueList/IssueList'
 import { BoardView } from '../../issue/BoardView/BoardView'
 import { Spinner } from '../../ui/Spinner/Spinner'
+import { ScrollToTop } from '../../ui/ScrollToTop/ScrollToTop'
 import { useIssueSort } from '@/hooks/useIssueSort'
 import type { SortField } from '@/hooks/useIssueSort'
 import styles from './MainContent.module.css'
@@ -48,6 +50,17 @@ export function MainContent({
 }: MainContentProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('board')
   const { sorted, sortField, sortDir, handleSortField } = useIssueSort(filtered)
+
+  const contentRef = useRef<HTMLDivElement>(null)
+  const isMountRef = useRef(true)
+
+  useEffect(() => {
+    if (isMountRef.current) {
+      isMountRef.current = false
+      return
+    }
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [include, exclude, activityFilter])
 
   return (
     <div className={styles.wrapper}>
@@ -99,12 +112,19 @@ export function MainContent({
               updatedCount={updatedCount}
               onChange={onActivityFilterChange}
             />
+            <SavedFilters
+              include={include}
+              exclude={exclude}
+              selectedProject={selectedProject}
+              onLoad={(inc, exc) => { onIncludeChange(inc); onExcludeChange(exc) }}
+            />
           </>
         )}
       </aside>
 
       {/* ─── Right Content ─── */}
-      <div className={styles.content}>
+      <div className={styles.content} ref={contentRef}>
+        <ScrollToTop containerRef={contentRef} />
         {sorted !== null && (
           <>
             <div className={styles.toolbar}>

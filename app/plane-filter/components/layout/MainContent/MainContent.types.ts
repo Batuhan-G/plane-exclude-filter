@@ -17,9 +17,9 @@ export interface MainContentProps {
   newCount: number
   updatedCount: number
   onProjectChange: (id: string) => void
-  onIncludeChange: (filter: FilterSet) => void
-  onExcludeChange: (filter: FilterSet) => void
-  onActivityFilterChange: (filter: ActivityFilter) => void
+  onIncludeChange: React.Dispatch<React.SetStateAction<FilterSet>>
+  onExcludeChange: React.Dispatch<React.SetStateAction<FilterSet>>
+  onActivityFilterChange: React.Dispatch<React.SetStateAction<ActivityFilter>>
   onFilterReset: () => void
   searchQuery: string
   getIssueUrl: (issue: RawIssue) => string

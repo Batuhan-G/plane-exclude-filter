@@ -1,0 +1,230 @@
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid #6c6ef7;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+}
+
+.panelTitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6c6ef7;
+  margin-right: 7px;
+  flex-shrink: 0;
+  position: relative;
+  top: -1px;
+}
+
+/* ─── Save button ──────────────────────────────────────── */
+.saveBtn {
+  font-size: 12px;
+  color: #6c6ef7;
+  background: none;
+  border: 1px dashed #6c6ef7;
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+  font-family: var(--font);
+}
+
+.saveBtn:hover {
+  background: color-mix(in srgb, #6c6ef7 10%, transparent);
+}
+
+/* ─── Save form ────────────────────────────────────────── */
+.saveForm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 0 8px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.nameInput:focus {
+  border-color: #6c6ef7;
+}
+
+.nameInput::placeholder {
+  color: var(--text3);
+}
+
+.confirmBtn,
+.cancelBtn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  font-family: var(--font);
+}
+
+.confirmBtn {
+  background: #6c6ef7;
+  color: #fff;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background: #5557d4;
+}
+
+.confirmBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cancelBtn {
+  background: var(--bg3);
+  color: var(--text2);
+}
+
+.cancelBtn:hover {
+  background: var(--bg4);
+  color: var(--text);
+}
+
+/* ─── Empty state ──────────────────────────────────────── */
+.empty {
+  font-size: 12px;
+  color: var(--text3);
+  font-style: italic;
+}
+
+/* ─── Preset list ──────────────────────────────────────── */
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  transition: border-color 0.15s;
+}
+
+.itemActive {
+  border-color: #6c6ef7;
+  background: color-mix(in srgb, #6c6ef7 8%, var(--bg3));
+}
+
+.itemName {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+  user-select: none;
+}
+
+.itemActive .itemName {
+  color: var(--text);
+}
+
+.editInput {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  background: var(--bg);
+  border: 1px solid #6c6ef7;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 0 6px;
+  outline: none;
+}
+
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.loadBtn {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6c6ef7;
+  background: none;
+  border: 1px solid #6c6ef7;
+  border-radius: var(--radius);
+  padding: 2px 8px;
+  height: 22px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: var(--font);
+}
+
+.loadBtn:hover {
+  background: #6c6ef7;
+  color: #fff;
+}
+
+.deleteBtn {
+  font-size: 11px;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius);
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+.deleteBtn:hover {
+  color: #ff4d4d;
+  background: color-mix(in srgb, #ff4d4d 10%, transparent);
+}
