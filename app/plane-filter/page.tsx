@@ -1,10 +1,19 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { usePlaneData } from '@/hooks/usePlaneData'
 import { useIssues } from '@/hooks/useIssues'
 import { useFilter } from '@/hooks/useFilter'
 import { isNewIssue, isUpdatedIssue, applySearch, type SearchField } from '@/lib/filterUtils'
+import {
+  buildUrlParams,
+  readProjectFromParams,
+  readSearchFromParams,
+  readActivityFromParams,
+  readFiltersFromParams,
+  hasFilterParams,
+} from '@/lib/filterUrlUtils'
 import { Header } from './components/layout/Header/Header'
 import { MainContent } from './components/layout/MainContent/MainContent'
 import { IssueDrawer } from './components/issue/IssueDrawer/IssueDrawer'
@@ -16,24 +25,78 @@ const PLANE_APP_URL = process.env.NEXT_PUBLIC_PLANE_APP_URL || 'https://app.plan
 const PLANE_WORKSPACE = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG || ''
 
 export default function PlaneFilterPage() {
-  const [selectedProject, setSelectedProject] = useState('')
-  const [selectedIssue, setSelectedIssue] = useState<RawIssue | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchField, setSearchField] = useState<SearchField>('code')
+  return (
+    <Suspense>
+      <PlaneFilterPageContent />
+    </Suspense>
+  )
+}
+
+function PlaneFilterPageContent() {
+  const searchParams = useSearchParams()
+
+  const initialParams = useRef(new URLSearchParams(searchParams.toString()))
+
+  const initialProject = readProjectFromParams(initialParams.current)
+  const initialSearch  = readSearchFromParams(initialParams.current)
+
+  const [selectedProject, setSelectedProject] = useState(initialProject)
+  const [selectedIssue,   setSelectedIssue]   = useState<RawIssue | null>(null)
+  const [searchQuery,     setSearchQuery]      = useState(initialSearch.query)
+  const [searchField,     setSearchField]      = useState<SearchField>(initialSearch.field)
 
   const planeData = usePlaneData()
-  const issues = useIssues()
-  const filter = useFilter(issues.allIssues)
+  const issues    = useIssues()
+  const filter    = useFilter(issues.allIssues)
+
+  const urlRestoredRef = useRef(false)
+
+  useEffect(() => {
+    if (initialProject) {
+      planeData.loadProject(initialProject)
+      issues.fetchIssues(initialProject)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (urlRestoredRef.current) return
+    if (!planeData.members.length && !planeData.labels.length && !planeData.states.length) return
+    if (!hasFilterParams(initialParams.current)) return
+
+    urlRestoredRef.current = true
+
+    const { include, exclude } = readFiltersFromParams(
+      initialParams.current,
+      planeData.members,
+      planeData.labels,
+      planeData.states,
+    )
+    const activity = readActivityFromParams(initialParams.current)
+
+    filter.setInclude(include)
+    filter.setExclude(exclude)
+    filter.setActivityFilter(activity)
+  }, [planeData.members, planeData.labels, planeData.states])
+
+  useEffect(() => {
+    const params = buildUrlParams(
+      selectedProject,
+      filter.include,
+      filter.exclude,
+      filter.activityFilter,
+      searchQuery,
+      searchField,
+    )
+    const qs = params.toString()
+    const newUrl = qs ? `?${qs}` : window.location.pathname
+    window.history.replaceState(null, '', newUrl)
+  }, [selectedProject, filter.include, filter.exclude, filter.activityFilter, searchQuery, searchField])
+
 
   const displayIssues = useMemo(
     () => filter.filtered !== null ? applySearch(filter.filtered, searchQuery, searchField) : null,
     [filter.filtered, searchQuery, searchField]
   )
-
-  function handleSearchFieldChange(field: SearchField) {
-    setSearchField(field)
-    setSearchQuery('')
-  }
 
   const selectedProjectObj = planeData.projects.find(p => p.id === selectedProject)
 
@@ -46,6 +109,12 @@ export default function PlaneFilterPage() {
     [issues.allIssues]
   )
 
+
+  function handleSearchFieldChange(field: SearchField) {
+    setSearchField(field)
+    setSearchQuery('')
+  }
+
   function getIssueUrl(issue: RawIssue): string {
     if (!PLANE_WORKSPACE || !selectedProjectObj) return ''
     return `${PLANE_APP_URL}/${PLANE_WORKSPACE}/projects/${selectedProjectObj.id}/issues/${issue.id}/`
@@ -55,6 +124,7 @@ export default function PlaneFilterPage() {
     setSelectedProject(id)
     issues.reset()
     filter.reset()
+    urlRestoredRef.current = true 
     if (!id) return
     await planeData.loadProject(id)
     await issues.fetchIssues(id)
