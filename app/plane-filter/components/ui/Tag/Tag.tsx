@@ -10,7 +10,7 @@ export function Tag({ label, color, onRemove }: TagProps) {
       {color && (
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />
       )}
-      {label}
+      <span className={styles.tagLabel}>{label}</span>
       <button className={styles.tagRemove} onClick={onRemove} aria-label="Remove">×</button>
     </span>
   )

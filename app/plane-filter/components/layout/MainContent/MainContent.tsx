@@ -53,6 +53,7 @@ export function MainContent({
 
   const contentRef = useRef<HTMLDivElement>(null)
   const isMountRef = useRef(true)
+  const [boardScrollReset, setBoardScrollReset] = useState(0)
 
   useEffect(() => {
     if (isMountRef.current) {
@@ -60,6 +61,7 @@ export function MainContent({
       return
     }
     contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    setBoardScrollReset(k => k + 1)
   }, [include, exclude, activityFilter])
 
   return (
@@ -190,6 +192,7 @@ export function MainContent({
                 members={members}
                 getIssueUrl={getIssueUrl}
                 onSelectIssue={onSelectIssue}
+                scrollResetKey={boardScrollReset}
               />
             )}
           </>

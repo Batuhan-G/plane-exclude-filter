@@ -4,6 +4,7 @@
   gap: 16px;
   align-items: stretch;
   overflow-x: auto;
+  height: 100%;
   padding-bottom: 8px;
   cursor: grab;
   user-select: none;
@@ -18,7 +19,33 @@
   gap: 0;
   background: var(--bg);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s;
+}
+
+.column:hover {
+  scrollbar-color: var(--border2) transparent;
+}
+
+.column::-webkit-scrollbar {
+  width: 4px;
+}
+
+.column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.column::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.column:hover::-webkit-scrollbar-thumb {
+  background: var(--border2);
 }
 
 .columnHeader {
@@ -27,6 +54,10 @@
   gap: 7px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg);
 }
 
 .columnDot {

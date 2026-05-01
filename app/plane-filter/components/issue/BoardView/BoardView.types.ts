@@ -7,6 +7,7 @@ export interface BoardViewProps {
   members: PlaneMember[]
   getIssueUrl?: (issue: RawIssue) => string
   onSelectIssue: (issue: RawIssue) => void
+  scrollResetKey?: number
 }
 
 export interface BoardCardProps {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Avatar } from '../../ui/Avatar/Avatar'
 import { PRIORITY_CONFIG } from '@/lib/constants'
 import { isNewIssue, isUpdatedIssue } from '@/lib/filterUtils'
@@ -8,8 +8,15 @@ import { useDragScroll } from '@/hooks/useDragScroll'
 import styles from './BoardView.module.css'
 import type { BoardViewProps, BoardCardProps } from './BoardView.types'
 
-export function BoardView({ issues, states, labels, members, getIssueUrl, onSelectIssue }: BoardViewProps) {
+export function BoardView({ issues, states, labels, members, getIssueUrl, onSelectIssue, scrollResetKey }: BoardViewProps) {
   const { ref: boardRef, handlers } = useDragScroll()
+
+  useEffect(() => {
+    if (!scrollResetKey) return
+    boardRef.current?.querySelectorAll('[data-column]').forEach(col => {
+      (col as HTMLElement).scrollTo({ top: 0, behavior: 'smooth' })
+    })
+  }, [scrollResetKey])
 
   if (issues.length === 0) {
     return (
@@ -29,7 +36,7 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
   return (
     <div ref={boardRef} className={styles.board} {...handlers}>
       {statesWithIssues.map(({ state, issues: colIssues }) => (
-        <div key={state.id} className={styles.column}>
+        <div key={state.id} className={styles.column} data-column>
           <div className={styles.columnHeader}>
             <span className={styles.columnDot} style={{ background: state.color }} />
             <span className={styles.columnName}>{state.name}</span>
@@ -54,7 +61,7 @@ export function BoardView({ issues, states, labels, members, getIssueUrl, onSele
       ))}
 
       {unknownIssues.length > 0 && (
-        <div className={styles.column}>
+        <div className={styles.column} data-column>
           <div className={styles.columnHeader}>
             <span className={styles.columnDot} style={{ background: 'var(--text3)' }} />
             <span className={styles.columnName}>Unknown</span>
