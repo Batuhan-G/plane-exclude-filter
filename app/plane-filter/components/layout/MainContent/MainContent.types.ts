@@ -20,7 +20,6 @@ export interface MainContentProps {
   onIncludeChange: React.Dispatch<React.SetStateAction<FilterSet>>
   onExcludeChange: React.Dispatch<React.SetStateAction<FilterSet>>
   onActivityFilterChange: React.Dispatch<React.SetStateAction<ActivityFilter>>
-  onFilterReset: () => void
   searchQuery: string
   getIssueUrl: (issue: RawIssue) => string
   onSelectIssue: (issue: RawIssue) => void

@@ -183,7 +183,6 @@ function PlaneFilterInner({ initialConfigured }: PlaneFilterContentProps) {
         onIncludeChange={filter.setInclude}
         onExcludeChange={filter.setExclude}
         onActivityFilterChange={filter.setActivityFilter}
-        onFilterReset={filter.reset}
         getIssueUrl={getIssueUrl}
         onSelectIssue={setSelectedIssue}
       />

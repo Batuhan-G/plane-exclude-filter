@@ -44,12 +44,18 @@ export function MainContent({
   onIncludeChange,
   onExcludeChange,
   onActivityFilterChange,
-  onFilterReset,
   getIssueUrl,
   onSelectIssue,
 }: MainContentProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('board')
   const { sorted, sortField, sortDir, handleSortField } = useIssueSort(filtered)
+
+  function handleIncludeClear() {
+    onIncludeChange({ assignees: [], labels: [], states: [], priorities: [], createdBy: [] })
+  }
+  function handlerExcludeClear() {
+    onExcludeChange({ assignees: [], labels: [], states: [], priorities: [], createdBy: [] })
+  }
 
   const contentRef = useRef<HTMLDivElement>(null)
   const isMountRef = useRef(true)
@@ -97,7 +103,7 @@ export function MainContent({
               states={states}
               filter={include}
               onChange={onIncludeChange}
-              onClear={onFilterReset}
+              onClear={handleIncludeClear}
             />
             <FilterPanel
               variant="exclude"
@@ -106,7 +112,7 @@ export function MainContent({
               states={states}
               filter={exclude}
               onChange={onExcludeChange}
-              onClear={() => onExcludeChange({ assignees: [], labels: [], states: [], priorities: [], createdBy: [] })}
+              onClear={handlerExcludeClear}
             />
             <ActivityFilterPanel
               filter={activityFilter}
