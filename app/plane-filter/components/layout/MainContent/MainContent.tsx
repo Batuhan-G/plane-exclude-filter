@@ -106,7 +106,7 @@ export function MainContent({
               states={states}
               filter={exclude}
               onChange={onExcludeChange}
-              onClear={() => onExcludeChange({ assignees: [], labels: [], states: [], priorities: [] })}
+              onClear={() => onExcludeChange({ assignees: [], labels: [], states: [], priorities: [], createdBy: [] })}
             />
             <ActivityFilterPanel
               filter={activityFilter}

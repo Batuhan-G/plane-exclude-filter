@@ -4,7 +4,7 @@ import { useEffect, useState, type RefObject } from 'react'
 import styles from './ScrollToTop.module.css'
 
 interface ScrollToTopProps {
-  containerRef: RefObject<HTMLDivElement>
+  containerRef: RefObject<HTMLDivElement | null>
 }
 
 export function ScrollToTop({ containerRef }: ScrollToTopProps) {
