@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const PLANE_BASE = process.env.PLANE_BASE_URL || 'https://app.plane.so'
+const PLANE_BASE = process.env.PLANE_BASE_URL || 'https://api.plane.so'
 
 export async function POST(req: NextRequest) {
   const { planeApiKey, workspaceSlug, geminiApiKey } = await req.json()

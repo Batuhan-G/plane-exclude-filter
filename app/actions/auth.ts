@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers'
 
-const PLANE_BASE = process.env.PLANE_BASE_URL || 'https://app.plane.so'
+const PLANE_BASE = process.env.PLANE_BASE_URL || 'https://api.plane.so'
 
 const COOKIE_OPTS = {
   httpOnly: true,
