@@ -26,7 +26,7 @@ A minimal Next.js tool that brings the **exclude filter** feature missing from P
 
 **Multi-project** — switch between projects from a dropdown; filters and saved presets are scoped per project.
 
-**Self-hosted support** — all Plane API and app URLs are configurable via environment variables.
+**Self-hosted support** — set `NEXT_PUBLIC_PLANE_URL` to your instance URL.
 
 ---
 
@@ -40,12 +40,8 @@ cp .env.local.example .env.local
 Edit `.env.local`:
 
 ```
-PLANE_API_KEY=plane_api_...                       # Profile → Personal Access Tokens
-NEXT_PUBLIC_PLANE_WORKSPACE_SLUG=my-workspace     # Slug from the URL: plane.so/MY-SLUG/...
-
-# Self-hosted Plane instances only:
-PLANE_BASE_URL=https://your-plane-instance.com
-NEXT_PUBLIC_PLANE_APP_URL=https://your-plane-instance.com
+PLANE_API_KEY=plane_api_...             # Profile → Personal Access Tokens
+NEXT_PUBLIC_PLANE_URL=https://app.plane.so  # Self-hosted: your Plane instance URL
 ```
 
 ```bash

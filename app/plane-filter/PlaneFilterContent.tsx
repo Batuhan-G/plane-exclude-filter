@@ -41,6 +41,14 @@ function PlaneFilterInner({ initialConfigured, appBaseUrl, workspaceSlug }: Plan
   const [searchField,     setSearchField]      = useState<SearchField>(initialSearch.field)
   const [showOnboarding,  setShowOnboarding]   = useState(!initialConfigured)
 
+  useEffect(() => {
+    if (!showOnboarding) return
+    fetch('/api/auth/status')
+      .then(r => r.json())
+      .then(({ configured }) => { if (configured) setShowOnboarding(false) })
+      .catch(() => {})
+  }, [])
+
   const planeData = usePlaneData()
   const issues    = useIssues()
   const filter    = useFilter(issues.allIssues)
