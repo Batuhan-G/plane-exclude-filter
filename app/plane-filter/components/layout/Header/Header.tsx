@@ -1,9 +1,11 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
+import { resetAuth } from '@/app/actions/auth'
 import { Spinner } from '../../ui/Spinner/Spinner'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import styles from './Header.module.css'
-import type { HeaderProps } from './Header.types'
+import type { HeaderProps, OpenMenu } from './Header.types'
 import type { SearchField } from '@/lib/filterUtils'
 
 const FIELD_CONFIG: { value: SearchField; label: string; placeholder: string }[] = [
@@ -12,20 +14,28 @@ const FIELD_CONFIG: { value: SearchField; label: string; placeholder: string }[]
   { value: 'content', label: 'Content', placeholder: 'Search title & description...' },
 ]
 
-export function Header({ filtered, totalCount, selectedProject, syncing, loadingProject, searchQuery, searchField, onSearchChange, onSearchFieldChange, onSync }: HeaderProps) {
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!dropdownOpen) return
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
+
+export function Header({ filtered, totalCount, selectedProject, syncing, loadingProject, searchQuery, searchField, onSearchChange, onSearchFieldChange, onSync, onReset }: HeaderProps) {
+  const [openMenu,  setOpenMenu]  = useState<OpenMenu>(null)
+  const [resetting, setResetting] = useState(false)
+
+  const searchRef   = useRef<HTMLDivElement>(null)
+  const settingsRef = useRef<HTMLDivElement>(null)
+
+  useClickOutside(searchRef,   () => setOpenMenu(null), openMenu === 'search')
+  useClickOutside(settingsRef, () => setOpenMenu(null), openMenu === 'settings')
+
+  async function handleReset() {
+    setOpenMenu(null)
+    setResetting(true)
+    try {
+      await resetAuth()
+    } finally {
+      onReset()
+      setResetting(false)
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [dropdownOpen])
+  }
 
   const current = FIELD_CONFIG.find(f => f.value === searchField) ?? FIELD_CONFIG[0]
 
@@ -37,10 +47,10 @@ export function Header({ filtered, totalCount, selectedProject, syncing, loading
           <span>plane<span className={styles.logoAccent}>filter</span></span>
         </div>
         <div className={styles.searchWrap}>
-          <div className={styles.fieldSelector} ref={dropdownRef}>
+          <div className={styles.fieldSelector} ref={searchRef}>
             <button
               className={styles.fieldBtn}
-              onClick={() => setDropdownOpen(o => !o)}
+              onClick={() => setOpenMenu(m => m === 'search' ? null : 'search')}
               type="button"
             >
               {current.label}
@@ -48,13 +58,13 @@ export function Header({ filtered, totalCount, selectedProject, syncing, loading
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-            {dropdownOpen && (
+            {openMenu === 'search' && (
               <div className={styles.fieldDropdown}>
                 {FIELD_CONFIG.map(f => (
                   <button
                     key={f.value}
                     className={`${styles.fieldOption} ${f.value === searchField ? styles.fieldOptionActive : ''}`}
-                    onClick={() => { onSearchFieldChange(f.value); setDropdownOpen(false) }}
+                    onClick={() => { onSearchFieldChange(f.value); setOpenMenu(null) }}
                     type="button"
                   >
                     {f.label}
@@ -104,6 +114,31 @@ export function Header({ filtered, totalCount, selectedProject, syncing, loading
               {syncing ? <><Spinner variant="dark" /> Syncing...</> : 'Sync'}
             </button>
           )}
+          <div className={styles.settingsWrap} ref={settingsRef}>
+            <button
+              className={styles.settingsBtn}
+              onClick={() => setOpenMenu(m => m === 'settings' ? null : 'settings')}
+              aria-label="Settings"
+              type="button"
+              disabled={resetting}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+            {openMenu === 'settings' && (
+              <div className={styles.settingsDropdown}>
+                <button
+                  className={styles.settingsOption}
+                  onClick={handleReset}
+                  type="button"
+                >
+                  Reset Credentials
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

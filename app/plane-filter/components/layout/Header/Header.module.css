@@ -226,3 +226,64 @@
 .searchClear:hover {
   color: var(--text);
 }
+
+.settingsWrap {
+  position: relative;
+}
+
+.settingsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text3);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.settingsBtn:hover:not(:disabled) {
+  color: var(--text2);
+  border-color: var(--border2);
+}
+
+.settingsBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.settingsDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 100;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+  min-width: 160px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.settingsOption {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--red);
+  cursor: pointer;
+  border-radius: calc(var(--radius) - 2px);
+  transition: background 0.1s;
+}
+
+.settingsOption:hover {
+  background: var(--red-bg);
+}

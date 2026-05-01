@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const PLANE_BASE = process.env.PLANE_BASE_URL || 'https://api.plane.so'
-const PLANE_API = PLANE_BASE + '/api/v1'
-const API_KEY = process.env.PLANE_API_KEY!
-const WORKSPACE = process.env.PLANE_WORKSPACE_SLUG!
+const ENV_BASE = process.env.PLANE_BASE_URL || 'https://api.plane.so'
+const ENV_API_KEY = process.env.PLANE_API_KEY || ''
+const ENV_WORKSPACE = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG || ''
 
+const isDev = process.env.NODE_ENV === 'development'
 
-async function planePatch(path: string, body: unknown) {
-  const url = `${PLANE_API}${path}`
+function getCredentials(req: NextRequest) {
+  const apiKey = req.cookies.get('plane_api_key')?.value || (isDev ? ENV_API_KEY : null)
+  const workspace = req.cookies.get('plane_workspace_slug')?.value || (isDev ? ENV_WORKSPACE : null)
+  const planeApi = ENV_BASE + '/api/v1'
+  return { apiKey, workspace, planeApi }
+}
+
+async function planePatch(path: string, body: unknown, apiKey: string, planeApi: string) {
+  const url = `${planeApi}${path}`
   const res = await fetch(url, {
     method: 'PATCH',
-    headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY, 'Content-Type': 'application/json' },
+    headers: { 'X-API-Key': apiKey, 'X-API-Token': apiKey, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
     cache: 'no-store',
   })
@@ -21,10 +28,10 @@ async function planePatch(path: string, body: unknown) {
   return res.json()
 }
 
-async function planeGet(urlOrPath: string, noCache = false) {
-  const url = urlOrPath.startsWith('http') ? urlOrPath : `${PLANE_API}${urlOrPath}`
+async function planeGet(urlOrPath: string, noCache = false, apiKey: string, planeApi: string) {
+  const url = urlOrPath.startsWith('http') ? urlOrPath : `${planeApi}${urlOrPath}`
   const res = await fetch(url, {
-    headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY },
+    headers: { 'X-API-Key': apiKey, 'X-API-Token': apiKey },
     ...(noCache ? { cache: 'no-store' } : { next: { revalidate: 30 } }),
   })
   if (!res.ok) {
@@ -34,12 +41,12 @@ async function planeGet(urlOrPath: string, noCache = false) {
   return res.json()
 }
 
-async function getAllPages(path: string, noCache = false) {
+async function getAllPages(path: string, noCache = false, apiKey: string, planeApi: string) {
   const results: unknown[] = []
   let cursor: string | null = null
   while (true) {
-    const url = `${PLANE_API}${path}?per_page=100${cursor ? `&cursor=${cursor}` : ''}`
-    const data = await planeGet(url, noCache)
+    const url = `${planeApi}${path}?per_page=100${cursor ? `&cursor=${cursor}` : ''}`
+    const data = await planeGet(url, noCache, apiKey, planeApi)
     results.push(...(data.results ?? []))
     if (!data.next_page_results) break
     cursor = data.next_cursor
@@ -53,14 +60,20 @@ export async function GET(req: NextRequest) {
   const projectId = searchParams.get('project')
   const issueId = searchParams.get('issue')
 
+  const { apiKey, workspace, planeApi } = getCredentials(req)
+
+  if (!apiKey || !workspace) {
+    return NextResponse.json({ error: 'NOT_CONFIGURED' }, { status: 401 })
+  }
+
   try {
     if (action === 'projects') {
-      const projects = await getAllPages(`/workspaces/${WORKSPACE}/projects/`)
+      const projects = await getAllPages(`/workspaces/${workspace}/projects/`, false, apiKey, planeApi)
       return NextResponse.json(projects)
     }
 
     if (action === 'members' && projectId) {
-      const data = await planeGet(`/workspaces/${WORKSPACE}/projects/${projectId}/members/`)
+      const data = await planeGet(`/workspaces/${workspace}/projects/${projectId}/members/`, false, apiKey, planeApi)
       const members = (data.results ?? data).map((m: Record<string, unknown>) => {
         const member = (m.member ?? m) as Record<string, unknown>
         return {
@@ -73,7 +86,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === 'labels' && projectId) {
-      const labels = await getAllPages(`/workspaces/${WORKSPACE}/projects/${projectId}/labels/`)
+      const labels = await getAllPages(`/workspaces/${workspace}/projects/${projectId}/labels/`, false, apiKey, planeApi)
       return NextResponse.json(labels.map((l: unknown) => {
         const label = l as Record<string, unknown>
         return { id: label.id, name: label.name, color: label.color ?? '#888' }
@@ -83,14 +96,16 @@ export async function GET(req: NextRequest) {
     if (action === 'issues' && projectId) {
       const bust = searchParams.has('bust')
       const issues = await getAllPages(
-        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/`,
-        bust
+        `/workspaces/${workspace}/projects/${projectId}/issues/`,
+        bust,
+        apiKey,
+        planeApi
       )
       return NextResponse.json(issues)
     }
-    
+
     if (action === 'states' && projectId) {
-      const data = await planeGet(`/workspaces/${WORKSPACE}/projects/${projectId}/states/`)
+      const data = await planeGet(`/workspaces/${workspace}/projects/${projectId}/states/`, false, apiKey, planeApi)
       const states = (data.results ?? []).map((s: Record<string, unknown>) => ({
         id: s.id,
         name: s.name,
@@ -101,28 +116,35 @@ export async function GET(req: NextRequest) {
 
     if (action === 'attachments' && projectId && issueId) {
       const data = await planeGet(
-        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/issue-attachments/`
+        `/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/issue-attachments/`,
+        false,
+        apiKey,
+        planeApi
       )
       return NextResponse.json(data.results ?? data)
     }
 
     if (action === 'me') {
-      const data = await planeGet(`/users/me/`)
+      const data = await planeGet(`/users/me/`, false, apiKey, planeApi)
       return NextResponse.json({ id: data.id, display_name: data.display_name, avatar: data.avatar ?? '' })
     }
 
     if (action === 'comments' && projectId && issueId) {
       const data = await planeGet(
-        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/comments/`,
-        true
+        `/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/comments/`,
+        true,
+        apiKey,
+        planeApi
       )
       return NextResponse.json(data.results ?? data)
     }
 
     if (action === 'activities' && projectId && issueId) {
       const data = await planeGet(
-        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/activities/`,
-        true
+        `/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/activities/`,
+        true,
+        apiKey,
+        planeApi
       )
       return NextResponse.json(data.results ?? data)
     }
@@ -137,10 +159,10 @@ export async function GET(req: NextRequest) {
         : url.split('/').map(encodeURIComponent).join('/')
       const resolvedUrl = url.startsWith('http')
         ? url
-        : `${PLANE_API}/workspaces/${WORKSPACE}/file-assets/${encodedPath}/`
+        : `${planeApi}/workspaces/${workspace}/file-assets/${encodedPath}/`
 
       const upstream = await fetch(resolvedUrl, {
-        headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY },
+        headers: { 'X-API-Key': apiKey, 'X-API-Token': apiKey },
         cache: 'no-store',
       })
       if (!upstream.ok) {
@@ -199,13 +221,19 @@ export async function POST(req: NextRequest) {
   const projectId = searchParams.get('project')
   const issueId = searchParams.get('issue')
 
+  const { apiKey, workspace, planeApi } = getCredentials(req)
+
+  if (!apiKey || !workspace) {
+    return NextResponse.json({ error: 'NOT_CONFIGURED' }, { status: 401 })
+  }
+
   try {
     if (action === 'addComment' && projectId && issueId) {
       const body = await req.json()
-      const url = `${PLANE_API}/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/comments/`
+      const url = `${planeApi}/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/comments/`
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY, 'Content-Type': 'application/json' },
+        headers: { 'X-API-Key': apiKey, 'X-API-Token': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
         cache: 'no-store',
       })
@@ -230,12 +258,18 @@ export async function DELETE(req: NextRequest) {
   const issueId   = searchParams.get('issue')
   const commentId = searchParams.get('comment')
 
+  const { apiKey, workspace, planeApi } = getCredentials(req)
+
+  if (!apiKey || !workspace) {
+    return NextResponse.json({ error: 'NOT_CONFIGURED' }, { status: 401 })
+  }
+
   try {
     if (action === 'deleteComment' && projectId && issueId && commentId) {
-      const url = `${PLANE_API}/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/comments/${commentId}/`
+      const url = `${planeApi}/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/comments/${commentId}/`
       const res = await fetch(url, {
         method: 'DELETE',
-        headers: { 'X-API-Key': API_KEY, 'X-API-Token': API_KEY },
+        headers: { 'X-API-Key': apiKey, 'X-API-Token': apiKey },
         cache: 'no-store',
       })
       if (!res.ok) {
@@ -258,12 +292,20 @@ export async function PATCH(req: NextRequest) {
   const projectId = searchParams.get('project')
   const issueId = searchParams.get('issue')
 
+  const { apiKey, workspace, planeApi } = getCredentials(req)
+
+  if (!apiKey || !workspace) {
+    return NextResponse.json({ error: 'NOT_CONFIGURED' }, { status: 401 })
+  }
+
   try {
     if (action === 'updateIssue' && projectId && issueId) {
       const body = await req.json()
       const res = await planePatch(
-        `/workspaces/${WORKSPACE}/projects/${projectId}/issues/${issueId}/`,
-        body
+        `/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/`,
+        body,
+        apiKey,
+        planeApi
       )
       return NextResponse.json(res)
     }
