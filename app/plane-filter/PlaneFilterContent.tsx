@@ -21,14 +21,13 @@ import { OnboardingModal } from './components/ui/OnboardingModal/OnboardingModal
 import type { RawIssue } from '@/lib/types'
 import styles from './page.module.css'
 
-const PLANE_APP_URL = process.env.NEXT_PUBLIC_PLANE_APP_URL || 'https://app.plane.so'
-const PLANE_WORKSPACE = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG || ''
-
 interface PlaneFilterContentProps {
   initialConfigured: boolean
+  appBaseUrl: string
+  workspaceSlug: string
 }
 
-function PlaneFilterInner({ initialConfigured }: PlaneFilterContentProps) {
+function PlaneFilterInner({ initialConfigured, appBaseUrl, workspaceSlug }: PlaneFilterContentProps) {
   const searchParams = useSearchParams()
 
   const initialParams = useRef(new URLSearchParams(searchParams.toString()))
@@ -111,8 +110,8 @@ function PlaneFilterInner({ initialConfigured }: PlaneFilterContentProps) {
   }
 
   function getIssueUrl(issue: RawIssue): string {
-    if (!PLANE_WORKSPACE || !selectedProjectObj) return ''
-    return `${PLANE_APP_URL}/${PLANE_WORKSPACE}/projects/${selectedProjectObj.id}/issues/${issue.id}/`
+    if (!workspaceSlug || !selectedProjectObj) return ''
+    return `${appBaseUrl}/${workspaceSlug}/projects/${selectedProjectObj.id}/issues/${issue.id}/`
   }
 
   async function handleProjectChange(id: string) {
@@ -143,6 +142,8 @@ function PlaneFilterInner({ initialConfigured }: PlaneFilterContentProps) {
 
       <IssueDrawer
         issue={selectedIssue}
+        appBaseUrl={appBaseUrl}
+        workspaceSlug={workspaceSlug}
         states={planeData.states}
         labels={planeData.labels}
         members={planeData.members}
@@ -190,10 +191,10 @@ function PlaneFilterInner({ initialConfigured }: PlaneFilterContentProps) {
   )
 }
 
-export function PlaneFilterContent({ initialConfigured }: PlaneFilterContentProps) {
+export function PlaneFilterContent({ initialConfigured, appBaseUrl, workspaceSlug }: PlaneFilterContentProps) {
   return (
     <Suspense>
-      <PlaneFilterInner initialConfigured={initialConfigured} />
+      <PlaneFilterInner initialConfigured={initialConfigured} appBaseUrl={appBaseUrl} workspaceSlug={workspaceSlug} />
     </Suspense>
   )
 }

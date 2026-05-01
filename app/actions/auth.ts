@@ -1,8 +1,7 @@
 'use server'
 
 import { cookies } from 'next/headers'
-
-const PLANE_BASE = process.env.PLANE_BASE_URL || 'https://api.plane.so'
+import { parsePlaneUrl } from '@/lib/parsePlaneUrl'
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -14,26 +13,29 @@ const COOKIE_OPTS = {
 
 export async function setupAuth(data: {
   planeApiKey: string
-  workspaceSlug: string
-  geminiApiKey?: string
+  planeUrl: string
 }): Promise<{ ok: true } | { error: string }> {
-  const { planeApiKey, workspaceSlug, geminiApiKey } = data
+  const { planeApiKey, planeUrl } = data
+
+  const parsed = parsePlaneUrl(planeUrl)
+  if (!parsed) return { error: 'Invalid Plane URL. Example: https://plane.company.com/my-workspace' }
+
+  const { apiBaseUrl, workspaceSlug } = parsed
 
   const test = await fetch(
-    `${PLANE_BASE}/api/v1/workspaces/${workspaceSlug}/projects/?per_page=1`,
+    `${apiBaseUrl}/api/v1/workspaces/${workspaceSlug}/projects/?per_page=1`,
     {
       headers: { 'X-API-Key': planeApiKey, 'X-API-Token': planeApiKey },
       cache: 'no-store',
     }
   )
   if (!test.ok) {
-    return { error: 'Invalid Plane API key or workspace slug' }
+    return { error: 'Invalid Plane API key or workspace URL' }
   }
 
   const cookieStore = await cookies()
   cookieStore.set('plane_api_key', planeApiKey, COOKIE_OPTS)
-  cookieStore.set('plane_workspace_slug', workspaceSlug, COOKIE_OPTS)
-  if (geminiApiKey) cookieStore.set('gemini_api_key', geminiApiKey, COOKIE_OPTS)
+  cookieStore.set('plane_url', planeUrl.trim().replace(/\/$/, ''), COOKIE_OPTS)
 
   return { ok: true }
 }
@@ -41,20 +43,24 @@ export async function setupAuth(data: {
 export async function resetAuth(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete('plane_api_key')
-  cookieStore.delete('plane_workspace_slug')
-  cookieStore.delete('gemini_api_key')
+  cookieStore.delete('plane_url')
 }
 
-export async function getAuthStatus(): Promise<{ configured: boolean; hasGemini: boolean }> {
+export async function getAuthStatus(): Promise<{
+  configured: boolean
+  planeUrl: string | null
+}> {
   if (process.env.NODE_ENV === 'development') {
-    return { configured: true, hasGemini: !!process.env.GEMINI_API_KEY }
+    return {
+      configured: true,
+      planeUrl: process.env.NEXT_PUBLIC_PLANE_URL ?? null,
+    }
   }
   const cookieStore = await cookies()
-  const planeKey      = cookieStore.get('plane_api_key')?.value
-  const workspaceSlug = cookieStore.get('plane_workspace_slug')?.value
-  const geminiKey     = cookieStore.get('gemini_api_key')?.value
+  const planeKey = cookieStore.get('plane_api_key')?.value
+  const planeUrl = cookieStore.get('plane_url')?.value ?? null
   return {
-    configured: !!(planeKey && workspaceSlug),
-    hasGemini:  !!geminiKey,
+    configured: !!(planeKey && planeUrl),
+    planeUrl,
   }
 }

@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const ENV_BASE = process.env.PLANE_BASE_URL || 'https://api.plane.so'
+import { parsePlaneUrl } from '@/lib/parsePlaneUrl'
+
 const ENV_API_KEY = process.env.PLANE_API_KEY || ''
-const ENV_WORKSPACE = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG || ''
+const ENV_PLANE_URL = process.env.NEXT_PUBLIC_PLANE_URL || ''
 
 const isDev = process.env.NODE_ENV === 'development'
 
 function getCredentials(req: NextRequest) {
   const apiKey = req.cookies.get('plane_api_key')?.value || (isDev ? ENV_API_KEY : null)
-  const workspace = req.cookies.get('plane_workspace_slug')?.value || (isDev ? ENV_WORKSPACE : null)
-  const planeApi = ENV_BASE + '/api/v1'
+
+  const rawPlaneUrl = req.cookies.get('plane_url')?.value || (isDev ? ENV_PLANE_URL : null)
+  const parsed = rawPlaneUrl ? parsePlaneUrl(rawPlaneUrl) : null
+
+  const workspace = parsed?.workspaceSlug ?? null
+  const planeApi = parsed ? parsed.apiBaseUrl + '/api/v1' : ''
+
   return { apiKey, workspace, planeApi }
 }
 
@@ -173,7 +179,7 @@ export async function GET(req: NextRequest) {
       const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream'
 
       if (contentType.startsWith('text/html')) {
-        return NextResponse.json({ error: 'Got HTML — check PLANE_BASE_URL or asset path', resolvedUrl }, { status: 502 })
+        return NextResponse.json({ error: 'Got HTML — check NEXT_PUBLIC_PLANE_URL or asset path', resolvedUrl }, { status: 502 })
       }
 
       if (contentType.includes('application/json')) {

@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const PLANE_BASE = process.env.PLANE_BASE_URL || 'https://api.plane.so'
+import { parsePlaneUrl } from '@/lib/parsePlaneUrl'
 
 export async function POST(req: NextRequest) {
-  const { planeApiKey, workspaceSlug, geminiApiKey } = await req.json()
+  const { planeApiKey, planeUrl } = await req.json()
 
-  if (!planeApiKey || !workspaceSlug) {
+  if (!planeApiKey || !planeUrl) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
+  const parsed = parsePlaneUrl(planeUrl)
+  if (!parsed) {
+    return NextResponse.json({ error: 'Invalid Plane URL' }, { status: 400 })
+  }
+
+  const { apiBaseUrl, workspaceSlug } = parsed
+
   const test = await fetch(
-    `${PLANE_BASE}/api/v1/workspaces/${workspaceSlug}/projects/?per_page=1`,
+    `${apiBaseUrl}/api/v1/workspaces/${workspaceSlug}/projects/?per_page=1`,
     {
       headers: { 'X-API-Key': planeApiKey, 'X-API-Token': planeApiKey },
       cache: 'no-store',
@@ -18,13 +24,12 @@ export async function POST(req: NextRequest) {
   )
   if (!test.ok) {
     return NextResponse.json(
-      { error: 'Invalid Plane API key or workspace slug' },
+      { error: 'Invalid Plane API key or workspace URL' },
       { status: 401 }
     )
   }
 
   const res = NextResponse.json({ ok: true })
-
   const cookieOptions = {
     httpOnly: true,
     secure: true,
@@ -34,10 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   res.cookies.set('plane_api_key', planeApiKey, cookieOptions)
-  res.cookies.set('plane_workspace_slug', workspaceSlug, cookieOptions)
-  if (geminiApiKey) {
-    res.cookies.set('gemini_api_key', geminiApiKey, cookieOptions)
-  }
+  res.cookies.set('plane_url', planeUrl.trim().replace(/\/$/, ''), cookieOptions)
 
   return res
 }

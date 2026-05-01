@@ -10,10 +10,7 @@ import { getFileIcon, formatSize, sanitizeDescHtml } from './IssueDrawer.utils'
 import styles from './IssueDrawer.module.css'
 import type { IssueDrawerProps } from './IssueDrawer.types'
 
-const APP_URL = process.env.NEXT_PUBLIC_PLANE_APP_URL
-const WORKSPACE = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG
-
-export function IssueDrawer({ issue, states, labels, members, onClose, onIssueUpdate }: IssueDrawerProps) {
+export function IssueDrawer({ issue, appBaseUrl, workspaceSlug, states, labels, members, onClose, onIssueUpdate }: IssueDrawerProps) {
   const editor = useIssueEditor({ issue, onIssueUpdate, onClose })
   const { attachments, loading: loadingAttachments } = useIssueAttachments(issue)
 
@@ -36,8 +33,8 @@ export function IssueDrawer({ issue, states, labels, members, onClose, onIssueUp
 
   const p = PRIORITY_CONFIG[localIssue.priority] ?? PRIORITY_CONFIG.none
   const stateObj = states.find(s => s.id === localIssue.state)
-  const issueUrl = APP_URL && WORKSPACE
-    ? `${APP_URL}/${WORKSPACE}/projects/${localIssue.project}/issues/${localIssue.id}/`
+  const issueUrl = appBaseUrl && workspaceSlug
+    ? `${appBaseUrl}/${workspaceSlug}/projects/${localIssue.project}/issues/${localIssue.id}/`
     : null
   const descHtml = sanitizeDescHtml(localIssue.description_html ?? '', issueUrl)
 

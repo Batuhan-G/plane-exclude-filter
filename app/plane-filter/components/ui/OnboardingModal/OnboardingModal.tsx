@@ -7,20 +7,18 @@ import { OnboardingModalProps } from './OnboardingModal.types'
 
 
 export function OnboardingModal({ onComplete }: OnboardingModalProps) {
-  const [fields, setFields] = useState({ planeApiKey: '', workspaceSlug: '', geminiApiKey: '' })
-  const [showPlaneKey,   setShowPlaneKey]   = useState(false)
-  const [showGeminiKey,  setShowGeminiKey]  = useState(false)
-  const [geminiExpanded, setGeminiExpanded] = useState(false)
-  const [loading,        setLoading]        = useState(false)
-  const [error,          setError]          = useState('')
+  const [fields, setFields] = useState({ planeApiKey: '', planeUrl: '' })
+  const [showPlaneKey, setShowPlaneKey] = useState(false)
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState('')
 
   const setField = (key: keyof typeof fields) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
       setFields(f => ({ ...f, [key]: e.target.value }))
 
-  const canSubmit = fields.planeApiKey.trim() && fields.workspaceSlug.trim() && !loading
+  const canSubmit = fields.planeApiKey.trim() && fields.planeUrl.trim() && !loading
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!canSubmit) return
 
@@ -30,8 +28,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
     try {
       const result = await setupAuth({
         planeApiKey: fields.planeApiKey.trim(),
-        workspaceSlug: fields.workspaceSlug.trim(),
-        geminiApiKey: fields.geminiApiKey.trim() || undefined,
+        planeUrl: fields.planeUrl.trim(),
       })
 
       if ('error' in result) {
@@ -93,80 +90,23 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="workspace-slug">
-              Workspace Slug
+            <label className={styles.label} htmlFor="plane-url">
+              Plane URL
               <span className={styles.required}>*</span>
             </label>
             <input
-              id="workspace-slug"
+              id="plane-url"
               className={styles.input}
-              type="text"
-              value={fields.workspaceSlug}
-              onChange={setField('workspaceSlug')}
-              placeholder="my-workspace"
+              type="url"
+              value={fields.planeUrl}
+              onChange={setField('planeUrl')}
+              placeholder="https://app.plane.so/my-workspace"
               autoComplete="off"
               spellCheck={false}
             />
             <p className={styles.hint}>
-              Found in your Plane URL: app.plane.so/<strong>YOUR-SLUG</strong>/...
+              Your Plane workspace URL — e.g. <strong>https://plane.company.com/my-workspace</strong>
             </p>
-          </div>
-
-          <div className={styles.collapsible}>
-            <button
-              type="button"
-              className={styles.collapseToggle}
-              onClick={() => setGeminiExpanded(v => !v)}
-            >
-              Enable AI features
-              <svg
-                className={`${styles.chevron} ${geminiExpanded ? styles.chevronOpen : ''}`}
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-
-            {geminiExpanded && (
-              <div className={styles.collapsibleContent}>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="gemini-api-key">
-                    Gemini API Key
-                    <span className={styles.optional}>(optional)</span>
-                  </label>
-                  <div className={styles.inputWrap}>
-                    <input
-                      id="gemini-api-key"
-                      className={styles.input}
-                      type={showGeminiKey ? 'text' : 'password'}
-                      value={fields.geminiApiKey}
-                      onChange={setField('geminiApiKey')}
-                      placeholder="AIza..."
-                      autoComplete="off"
-                      spellCheck={false}
-                    />
-                    <button
-                      type="button"
-                      className={styles.eyeBtn}
-                      onClick={() => setShowGeminiKey(v => !v)}
-                      aria-label={showGeminiKey ? 'Hide key' : 'Show key'}
-                    >
-                      {showGeminiKey ? <EyeOffIcon /> : <EyeIcon />}
-                    </button>
-                  </div>
-                  <p className={styles.hint}>
-                    Optional — enables AI features. Free at aistudio.google.com
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
