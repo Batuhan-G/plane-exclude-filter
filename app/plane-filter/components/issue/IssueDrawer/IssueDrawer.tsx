@@ -295,7 +295,11 @@ export function IssueDrawer({ issue, appBaseUrl, workspaceSlug, states, labels, 
             <div
               className={`${styles.drawerDescription} ${styles.descClickable}`}
               dangerouslySetInnerHTML={{ __html: descHtml }}
-              onClick={() => setEditingDesc(true)}
+              onClick={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.closest('a, img')) return;
+                setEditingDesc(true);
+              }}
             />
           ) : (
             <div className={`${styles.drawerNoDesc} ${styles.descClickable}`} onClick={() => setEditingDesc(true)}>
