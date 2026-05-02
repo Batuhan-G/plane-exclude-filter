@@ -1,24 +1,33 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Avatar } from '../../ui/Avatar/Avatar'
 import { IssueTimeline } from '../IssueTimeline'
 import { PRIORITY_CONFIG, PRIORITY_ITEMS } from '@/lib/constants'
 import { useIssueEditor } from '@/hooks/useIssueEditor'
 import { useIssueAttachments } from '@/hooks/useIssueAttachments'
-import { getFileIcon, formatSize, sanitizeDescHtml } from './IssueDrawer.utils'
+import { getFileIcon, formatSize } from '@/lib/fileUtils'
+import { sanitizeDescHtml } from '@/lib/descUtils'
 import styles from './IssueDrawer.module.css'
 import type { IssueDrawerProps } from './IssueDrawer.types'
 
-export function IssueDrawer({ issue, appBaseUrl, workspaceSlug, states, labels, members, onClose, onIssueUpdate }: IssueDrawerProps) {
+export function IssueDrawer({ issue, states, labels, members, onClose, onIssueUpdate }: IssueDrawerProps) {
   const editor = useIssueEditor({ issue, onIssueUpdate, onClose })
   const { attachments, loading: loadingAttachments } = useIssueAttachments(issue)
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
   useEffect(() => {
     if (!issue) return
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [issue])
+
+  // Must be before early return — Rules of Hooks
+  const descHtml = useMemo(() => {
+    const li = editor.localIssue
+    if (!li) return ''
+    return sanitizeDescHtml(li.description_html ?? '', li.project ?? null, li.id ?? null)
+  }, [editor.localIssue?.id, editor.localIssue?.description_html]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!editor.localIssue) return null
 
@@ -33,10 +42,6 @@ export function IssueDrawer({ issue, appBaseUrl, workspaceSlug, states, labels, 
 
   const p = PRIORITY_CONFIG[localIssue.priority] ?? PRIORITY_CONFIG.none
   const stateObj = states.find(s => s.id === localIssue.state)
-  const issueUrl = appBaseUrl && workspaceSlug
-    ? `${appBaseUrl}/${workspaceSlug}/projects/${localIssue.project}/issues/${localIssue.id}/`
-    : null
-  const descHtml = sanitizeDescHtml(localIssue.description_html ?? '', issueUrl)
 
   return (
     <>
@@ -297,7 +302,13 @@ export function IssueDrawer({ issue, appBaseUrl, workspaceSlug, states, labels, 
               dangerouslySetInnerHTML={{ __html: descHtml }}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
-                if (target.closest('a, img')) return;
+                const img = target.closest('img') as HTMLImageElement | null;
+                if (img?.dataset.descImg) {
+                  e.preventDefault();
+                  setLightboxSrc(img.src);
+                  return;
+                }
+                if (target.closest('a')) return;
                 setEditingDesc(true);
               }}
             />
@@ -346,6 +357,18 @@ export function IssueDrawer({ issue, appBaseUrl, workspaceSlug, states, labels, 
           </div>
         )}
       </aside>
+
+      {lightboxSrc && (
+        <div className={styles.lightboxOverlay} onClick={() => setLightboxSrc(null)}>
+          <button className={styles.lightboxClose} onClick={() => setLightboxSrc(null)} aria-label="Close">✕</button>
+          <img
+            src={lightboxSrc}
+            className={styles.lightboxImg}
+            onClick={(e) => e.stopPropagation()}
+            alt=""
+          />
+        </div>
+      )}
     </>
   )
 }

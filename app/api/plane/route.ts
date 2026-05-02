@@ -121,13 +121,38 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === 'attachments' && projectId && issueId) {
-      const data = await planeGet(
-        `/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/issue-attachments/`,
-        false,
-        apiKey,
-        planeApi
-      )
-      return NextResponse.json(data.results ?? data)
+      let data: unknown
+      try {
+        data = await planeGet(
+          `/workspaces/${workspace}/projects/${projectId}/work-items/${issueId}/attachments/`,
+          false,
+          apiKey,
+          planeApi
+        )
+      } catch {
+        data = await planeGet(
+          `/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/issue-attachments/`,
+          false,
+          apiKey,
+          planeApi
+        )
+      }
+      const items: unknown[] = Array.isArray(data)
+        ? data
+        : ((data as Record<string, unknown>).results as unknown[] ?? [])
+      const normalized = items.map((item) => {
+        const att = item as Record<string, unknown>
+        return {
+          id: att.id,
+          asset: (att.asset_url ?? att.asset) as string,
+          attributes: att.attributes ?? {
+            name: att.name,
+            size: att.size,
+            type: att.mime_type ?? 'application/octet-stream',
+          },
+        }
+      })
+      return NextResponse.json(normalized)
     }
 
     if (action === 'me') {
@@ -160,17 +185,43 @@ export async function GET(req: NextRequest) {
       const filename = searchParams.get('name')
       if (!url) return NextResponse.json({ error: 'Missing url' }, { status: 400 })
 
-      const encodedPath = url.startsWith('http')
-        ? url
-        : url.split('/').map(encodeURIComponent).join('/')
-      const resolvedUrl = url.startsWith('http')
-        ? url
-        : `${planeApi}/workspaces/${workspace}/file-assets/${encodedPath}/`
+      const assetCandidates: string[] = []
+      if (url.startsWith('http')) {
+        assetCandidates.push(url)
+      } else {
+        const enc = url.split('/').map(encodeURIComponent).join('/')
+        const baseUrl = planeApi.replace(/\/api\/v1$/, '')
+        if (projectId && issueId) {
+          assetCandidates.push(`${planeApi}/workspaces/${workspace}/projects/${projectId}/issues/${issueId}/file-assets/${enc}/`)
+        }
+        if (projectId) {
+          assetCandidates.push(`${planeApi}/workspaces/${workspace}/projects/${projectId}/file-assets/${enc}/`)
+        }
+        assetCandidates.push(`${planeApi}/workspaces/${workspace}/file-assets/${enc}/`)
+        assetCandidates.push(`${planeApi}/workspaces/${workspace}/assets/${enc}/`)
+        assetCandidates.push(`${baseUrl}/workspaces/${workspace}/file-assets/${enc}/`)
+      }
 
-      const upstream = await fetch(resolvedUrl, {
-        headers: { 'X-API-Key': apiKey, 'X-API-Token': apiKey },
-        cache: 'no-store',
-      })
+      let upstream: Response | null = null
+      let resolvedUrl = assetCandidates[0]
+      for (const candidate of assetCandidates) {
+        const res = await fetch(candidate, {
+          headers: { 'X-API-Key': apiKey, 'X-API-Token': apiKey },
+          cache: 'no-store',
+        })
+        if (res.status !== 404) {
+          upstream = res
+          resolvedUrl = candidate
+          break
+        }
+        await res.text()
+      }
+      if (!upstream) {
+        return NextResponse.json(
+          { error: 'Asset fetch failed: 404 on all candidates', tried: assetCandidates },
+          { status: 404 }
+        )
+      }
       if (!upstream.ok) {
         const body = await upstream.text()
         return NextResponse.json({ error: `Asset fetch failed: ${upstream.status}`, resolvedUrl, body }, { status: upstream.status })

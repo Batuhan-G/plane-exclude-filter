@@ -150,8 +150,6 @@ function PlaneFilterInner({ initialConfigured, appBaseUrl, workspaceSlug }: Plan
 
       <IssueDrawer
         issue={selectedIssue}
-        appBaseUrl={appBaseUrl}
-        workspaceSlug={workspaceSlug}
         states={planeData.states}
         labels={planeData.labels}
         members={planeData.members}
